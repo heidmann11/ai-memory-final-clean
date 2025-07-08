@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  users     User[]
+  customers Customer[]
+  jobs      Job[]
+  
+  @@map("companies")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String
+  lastName  String
+  role      String   @default("employee")
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  assignedJobs Job[] @relation("AssignedTechnician")
+  createdJobs  Job[] @relation("JobCreator")
+  
+  @@map("users")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  firstName String
+  lastName  String
+  email     String?
+  phone     String
+  address   String
+  city      String
+  state     String
+  zipCode   String
+  
+  createdAt DateTime @default(now())
+  jobs      Job[]
+  
+  @@map("customers")
+}
+
+model Job {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  type        String
+  priority    String   @default("NORMAL")
+  status      String   @default("SCHEDULED")
+  
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  
+  assignedToId String?
+  assignedTo   User?   @relation("AssignedTechnician", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User    @relation("JobCreator", fields: [createdById], references: [id])
+  
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  actualStart    DateTime?
+  actualEnd      DateTime?
+  
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  
+  estimatedCost Decimal? @db.Decimal(10, 2)
+  actualCost    Decimal? @db.Decimal(10, 2)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("jobs")
+}

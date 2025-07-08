@@ -1,0 +1,7 @@
+route-and-retain/lib/supabase.ts
+'use client'
+
+export default function CalendarPage() {
+  return <h1>Hello from Calendar Route</h1>
+}
+
