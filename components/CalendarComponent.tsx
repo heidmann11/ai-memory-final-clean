@@ -1,4 +1,3 @@
-console.log('supabase:', supabase)
 'use client';
 
 import Calendar from "@/components/Calendar";
