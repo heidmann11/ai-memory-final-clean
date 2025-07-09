@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { JobLocation } from '../GoogleMapComponent';
+import { JobLocation } from './GoogleMapComponent';
 import { v4 as uuidv4 } from 'uuid';
 
 interface CreateJobModalProps {
