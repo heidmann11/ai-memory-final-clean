@@ -4,3 +4,8 @@ node_modules/
 .env
 *.log
 .DS_Store
+*.zip
+project_backup/
+project_backup.zip
+route-and-retain-clean.zip
+*backup*
