@@ -1,53 +1,43 @@
-'use client';
+'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { User } from '@supabase/supabase-js'
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  companyId?: string; // Add this for company switching
-  // add more fields as needed
-};
-
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
-  login: (user: User) => void;
-  logout: () => void;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const supabase = createClient();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Optionally load user from localStorage or cookie here for "remember me"
-    const saved = localStorage.getItem("user");
-    if (saved) setUser(JSON.parse(saved));
-  }, []);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
 
-  const login = (user: User) => {
-    setUser(user);
-    localStorage.setItem("user", JSON.stringify(user));
-  };
+    // Get the initial session
+    const getSession = async () => {
+        const { data } = await supabase.auth.getSession();
+        setUser(data.session?.user ?? null);
+    };
+    getSession();
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-  };
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = { user };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

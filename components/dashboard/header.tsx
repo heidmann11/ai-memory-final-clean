@@ -1,71 +1,90 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-
-const navItems = [
-  { label: 'Jobs', href: '/jobs' },
-  { label: 'Financial', href: '/financial' },
-  { label: 'SMS Center', href: '/sms' },
-  { label: 'Routes', href: '/route-optimizer' },
-  { label: 'Photos', href: '/photos' },
-  { label: 'Weather', href: '/weather' },
-];
+import Link from 'next/link'
+import { useAuth } from '@/components/AuthContext'
+import { createClient } from '@/lib/supabase/client'
+import { usePathname } from 'next/navigation'
 
 export default function Header() {
+  const { user } = useAuth();
+  const supabase = createClient();
   const pathname = usePathname();
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const navItems = [
+    { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Jobs', href: '/jobs' },
+    { name: 'Routes', href: '/route-optimizer' },
+    { name: 'Financial', href: '/financial' },
+    { name: 'SMS', href: '/sms' },
+    { name: 'Photos', href: '/photos' },
+    { name: 'Weather', href: '/weather' }
+  ];
+
   return (
-    <header className="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 shadow-xl">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
-          {/* Orange Gradient Lightning Bolt with Rounded Corners */}
-          <div className="w-10 h-10 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-sm">
-            <svg 
-              className="w-5 h-5 text-white" 
-              fill="currentColor" 
-              viewBox="0 0 16 16"
-            >
-              <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641l2.5-8.5z"/>
-            </svg>
-          </div>
-          <span className="text-2xl font-bold text-white group-hover:text-orange-200 transition-colors duration-300">
-            Route & Retain
-          </span>
-        </Link>
-
-        <nav className="hidden md:flex gap-8">
-          {navItems.map(({ label, href }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`font-semibold transition-all duration-200 ${
-                pathname === href
-                  ? 'text-white border-b-2 border-orange-400 pb-1'
-                  : 'text-blue-100 hover:text-white hover:border-b-2 hover:border-orange-300 pb-1'
-              }`}
-            >
-              {label}
+    <header className="bg-gradient-to-br from-blue-900 via-blue-800 to-purple-900">
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M13 0L6 12h4l-1 12 7-12h-4l1-12z"/>
+              </svg>
+            </div>
+            <Link href="/" className="text-white text-lg font-semibold hover:text-blue-200 transition-colors">
+              Route & Retain
             </Link>
-          ))}
-        </nav>
+          </div>
 
-        {/* Mobile Menu Button */}
-        <button className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors duration-200">
-          <svg 
-            className="w-6 h-6 text-white" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M4 6h16M4 12h16M4 18h16" 
-            />
-          </svg>
-        </button>
+          {/* Navigation */}
+          <nav className="flex items-center space-x-8">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`text-sm font-medium transition-colors hover:text-blue-200 ${
+                    isActive ? 'text-white' : 'text-blue-100'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User Menu */}
+          <div className="flex items-center">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-blue-200">Welcome back!</span>
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm text-blue-200 hover:text-white transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link href="/login" className="text-sm text-blue-200 hover:text-white transition-colors">
+                  Sign In
+                </Link>
+                <Link 
+                  href="/signup" 
+                  className="bg-blue-600/30 hover:bg-blue-600/50 text-white text-sm px-3 py-1 rounded transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </header>
   );
