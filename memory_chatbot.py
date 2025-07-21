@@ -1,11 +1,22 @@
 # memory_chatbot.py
+from openai import OpenAI
+from supabase import create_client
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(dotenv_path="./.env")
+print("DEBUG: OPENAI_API_KEY =", os.getenv("OPENAI_API_KEY"))
+print("DEBUG: SUPABASE_URL =", os.getenv("SUPABASE_URL"))
+print("DEBUG: SUPABASE_KEY =", os.getenv("SUPABASE_KEY"))
+
+# ✅ Assign environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# ✅ Fail early if values are missing
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("❌ Missing SUPABASE_URL or SUPABASE_KEY in .env file")
 
 # Init clients
 openai_client = OpenAI(api_key=OPENAI_API_KEY)

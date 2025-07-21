@@ -1,0 +1,61 @@
+{
+  "name": "Route & Retain - Contractor Platform",
+  "short_name": "Route & Retain",
+  "description": "AI-Powered Integrated Platform for Contractors",
+  "theme_color": "#1e40af",
+  "background_color": "#1e3a8a",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192", 
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png", 
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Jobs",
+      "short_name": "Jobs", 
+      "description": "View and manage jobs",
+      "url": "/jobs",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Routes",
+      "short_name": "Routes",
+      "description": "Optimize routes", 
+      "url": "/route-optimizer",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Photos",
+      "short_name": "Photos",
+      "description": "Capture job photos",
+      "url": "/photos", 
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
