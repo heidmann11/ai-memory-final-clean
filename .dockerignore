@@ -1,0 +1,15 @@
+# Ignore virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Ignore system files
+.DS_Store
+
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore environment files (you'll pass via --env-file)
+.env
+.env.local

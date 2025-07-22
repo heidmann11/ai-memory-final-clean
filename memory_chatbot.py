@@ -1,78 +1,72 @@
-# memory_chatbot.py
+import streamlit as st
 from openai import OpenAI
 from supabase import create_client
 from dotenv import load_dotenv
 import os
 
-load_dotenv(dotenv_path="./.env")
-print("DEBUG: OPENAI_API_KEY =", os.getenv("OPENAI_API_KEY"))
-print("DEBUG: SUPABASE_URL =", os.getenv("SUPABASE_URL"))
-print("DEBUG: SUPABASE_KEY =", os.getenv("SUPABASE_KEY"))
-
-# ✅ Assign environment variables
+# Load environment variables
+load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-# ✅ Fail early if values are missing
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("❌ Missing SUPABASE_URL or SUPABASE_KEY in .env file")
+if not OPENAI_API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
+    st.error("❌ Missing environment variables in .env file")
+    st.stop()
 
-# Init clients
+# Initialize clients
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Store memory
-def store_memory(note):
-    embedding = openai_client.embeddings.create(
-        model="text-embedding-3-small",
-        input=note
-    ).data[0].embedding
+# Streamlit Page Config
+st.set_page_config(page_title="AI Memory Chatbot", page_icon="🧠", layout="wide")
 
-    supabase_client.table("project_memory").insert({
-        "content": note,
-        "embedding": embedding
-    }).execute()
-    print(f"✅ Stored: {note}")
+# --- Sidebar ---
+st.sidebar.title("📚 Memory Control")
+with st.sidebar.expander("Stored Memories", expanded=True):
+    memories = supabase_client.table("project_memory").select("*").execute().data
+    if memories:
+        for m in memories:
+            st.write(f"- {m['content']}")
+    else:
+        st.write("No memories yet.")
 
-# Retrieve context
-def retrieve_context(query, match_count=5):
-    query_embedding = openai_client.embeddings.create(
-        model="text-embedding-3-small",
-        input=query
-    ).data[0].embedding
+if st.sidebar.button("🗑 Clear All Memories"):
+    supabase_client.table("project_memory").delete().neq("id", 0).execute()
+    st.sidebar.success("✅ All memories cleared. Refresh the page!")
 
-    response = supabase_client.rpc("match_project_memory", {
-        "query_embedding": query_embedding,
-        "match_threshold": 0.0,
-        "match_count": match_count
-    }).execute()
+# --- Main Chat UI ---
+st.title("🧠 AI Memory Chat")
+st.markdown("**💡 Tip:** Use `add: your note` to store new info.")
 
-    return [item['content'] for item in response.data]
+# Session state for Q&A history
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-# Ask the AI
-def ask_ai(question):
-    context = "\n".join(retrieve_context(question))
-    prompt = f"Context:\n{context}\n\nQuestion: {question}"
+# Input
+user_input = st.text_input("💬 Ask a question or add a memory", "")
 
-    response = openai_client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are an expert software architect."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    print("\n🤖 Answer:", response.choices[0].message.content)
+if st.button("Send") and user_input:
+    if user_input.lower().startswith("add:"):
+        new_note = user_input[4:].strip()
+        supabase_client.table("project_memory").insert({"content": new_note}).execute()
+        st.success(f"✅ Memory added: {new_note}")
+    else:
+        with st.spinner("🤔 Thinking..."):
+            context = " ".join([m['content'] for m in memories])
+            prompt = f"Answer based on this context: {context}. Question: {user_input}"
+            response = openai_client.responses.create(
+                model="gpt-4.1-mini",
+                input=prompt
+            )
+            answer = response.output_text
+            st.session_state.history.append({"q": user_input, "a": answer})
+            st.info(answer)
 
-# Interactive CLI
-if __name__ == "__main__":
-    print("🧠 AI Memory Chat (type 'exit' to quit, 'add: your note' to store memory)")
-    while True:
-        user_input = input("\n> ").strip()
-        if user_input.lower() == "exit":
-            break
-        elif user_input.lower().startswith("add:"):
-            note = user_input[4:].strip()
-            store_memory(note)
-        elif user_input:
-            ask_ai(user_input)
+# Show last 5 Q&A
+if st.session_state.history:
+    with st.expander("📝 Recent Q&A History", expanded=True):
+        for item in st.session_state.history[-5:]:
+            st.markdown(f"**Q:** {item['q']}")
+            st.markdown(f"**A:** {item['a']}")
+            st.markdown("---")
