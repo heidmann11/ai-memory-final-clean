@@ -17,4 +17,5 @@ EXPOSE 8501
 ENV STREAMLIT_TELEMETRY=False
 
 # Run Streamlit app
-CMD ["streamlit", "run", "memory_chatbot.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["sh", "-c", "streamlit run memory_chatbot.py --server.port=$PORT --server.address=0.0.0.0"]
+
