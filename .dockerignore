@@ -1,5 +1,30 @@
-venv
-__pycache__
+# Python
+__pycache__/
 *.pyc
-.DS_Store
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
 .env
+.env.local
+.env.example
+.env.old
+
+# Node / Next.js (if present)
+node_modules/
+.next/
+
+# OS files
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+
+# Backups
+*.zip
+project_backup/
