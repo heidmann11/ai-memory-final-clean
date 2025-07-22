@@ -156,7 +156,7 @@ if st.session_state.enter_pressed or st.button("📤 Submit", type="primary"):
             st.session_state.messages.append({"role": "user", "content": user_input})
             st.session_state.messages.append({"role": "assistant", "content": ai_response})
         st.session_state.enter_pressed = False
-        st.experimental_rerun()
+        st.rerun()  # ✅ Correct method for latest Streamlit
 
 # Trigger Enter key
 st.session_state.enter_pressed = st.text_input("Press Enter to send", key="hidden_input", label_visibility="collapsed") == "send"
