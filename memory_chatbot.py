@@ -1,24 +1,25 @@
 from openai import OpenAI
 from supabase import create_client
-from dotenv import load_dotenv
 import os
-import streamlit as st
 
-# Load environment variables from .env locally
-load_dotenv()
+# ✅ Get keys from environment (Railway will provide them)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
-# Fetch environment variables
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+# ✅ Debug logs (only for deployment troubleshooting)
+print("DEBUG: OPENAI_API_KEY found?" , bool(OPENAI_API_KEY))
+print("DEBUG: SUPABASE_URL =", SUPABASE_URL)
 
-# Validate keys
+# ✅ Validate env variables
 if not OPENAI_API_KEY:
-    raise ValueError("❌ Missing OPENAI_API_KEY. Set it in Railway Variables or .env locally.")
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("❌ Missing Supabase credentials. Check SUPABASE_URL and SUPABASE_KEY.")
+    raise ValueError("❌ Missing OPENAI_API_KEY. Set it in Railway Variables.")
+if not SUPABASE_URL:
+    raise ValueError("❌ Missing SUPABASE_URL. Set it in Railway Variables.")
+if not SUPABASE_KEY:
+    raise ValueError("❌ Missing SUPABASE_KEY. Set it in Railway Variables.")
 
-# Initialize clients
+# ✅ Initialize clients
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
