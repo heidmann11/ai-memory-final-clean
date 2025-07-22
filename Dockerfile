@@ -19,3 +19,4 @@ ENV STREAMLIT_TELEMETRY=False
 # Run Streamlit app
 CMD ["sh", "-c", "streamlit run memory_chatbot.py --server.port=$PORT --server.address=0.0.0.0"]
 
+
