@@ -2,17 +2,60 @@ import streamlit as st
 from openai import OpenAI
 from supabase import create_client
 import os
+import sys
 
 # Set page config first
 st.set_page_config(page_title="AI Memory Chatbot", page_icon="🧠", layout="wide")
 
-# ✅ Get keys from environment (Railway will provide them)
+# 🔍 ENHANCED DEBUG SECTION
+st.sidebar.write("**🔍 Enhanced Debug Info:**")
+
+# Show ALL relevant environment variables (first 10 chars only for security)
+st.sidebar.write("**All Relevant Environment Variables:**")
+relevant_vars = []
+for key, value in os.environ.items():
+    if any(keyword in key.upper() for keyword in ['API', 'KEY', 'URL', 'SUPABASE', 'OPENAI', 'PORT', 'RAILWAY']):
+        masked_value = f"{value[:10]}..." if value else "None"
+        relevant_vars.append(f"- {key}: {masked_value}")
+        st.sidebar.write(f"- {key}: {masked_value}")
+
+if not relevant_vars:
+    st.sidebar.write("❌ No relevant environment variables found!")
+
+# Specific variable checks
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_URL = os.environ.get("SUPABASE_URL") 
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
-# ✅ Debug logs (only for deployment troubleshooting)
-st.sidebar.write("**Debug Info:**")
+st.sidebar.write("**Direct Variable Access:**")
+st.sidebar.write(f"OPENAI_API_KEY type: {type(OPENAI_API_KEY)}")
+st.sidebar.write(f"OPENAI_API_KEY length: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
+st.sidebar.write(f"OPENAI_API_KEY starts with 'sk-': {OPENAI_API_KEY.startswith('sk-') if OPENAI_API_KEY else False}")
+
+st.sidebar.write(f"SUPABASE_URL type: {type(SUPABASE_URL)}")
+st.sidebar.write(f"SUPABASE_URL length: {len(SUPABASE_URL) if SUPABASE_URL else 0}")
+st.sidebar.write(f"SUPABASE_URL contains 'supabase': {'supabase' in SUPABASE_URL.lower() if SUPABASE_URL else False}")
+
+st.sidebar.write(f"SUPABASE_KEY type: {type(SUPABASE_KEY)}")
+st.sidebar.write(f"SUPABASE_KEY length: {len(SUPABASE_KEY) if SUPABASE_KEY else 0}")
+
+# Check Railway-specific variables
+railway_vars = [key for key in os.environ.keys() if 'RAILWAY' in key.upper()]
+if railway_vars:
+    st.sidebar.write(f"**Railway Variables Found:** {len(railway_vars)}")
+    for var in railway_vars[:5]:  # Show first 5
+        st.sidebar.write(f"- {var}")
+else:
+    st.sidebar.write("**Railway Variables:** None found")
+
+# System info
+st.sidebar.write(f"**System Info:**")
+st.sidebar.write(f"Python version: {sys.version[:5]}")
+st.sidebar.write(f"Platform: {sys.platform}")
+st.sidebar.write(f"Total env vars: {len(os.environ)}")
+
+# Original debug info for comparison
+st.sidebar.write("**Original Debug:**")
 st.sidebar.write(f"OPENAI_API_KEY found: {bool(OPENAI_API_KEY)}")
 st.sidebar.write(f"SUPABASE_URL found: {bool(SUPABASE_URL)}")
 st.sidebar.write(f"SUPABASE_KEY found: {bool(SUPABASE_KEY)}")
