@@ -8,52 +8,63 @@ from datetime import datetime
 st.set_page_config(
     page_title="Corval.ai Memory Assistant",
     page_icon="🧠",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Better UI
+# Custom CSS for Branding & Clean Layout
 st.markdown("""
 <style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
+    #MainMenu, footer, header {visibility: hidden;}
+    
+    .main-header {
+        background: linear-gradient(90deg, #0d1b2a, #1b263b, #415a77, #1a73e8);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        text-align: center;
+        color: white;
+    }
 
-.main-header {
-    background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
-    padding: 2rem;
-    border-radius: 12px;
-    text-align: center;
-    color: white;
-}
-.main-header h1 {
-    font-size: 2.5rem;
-    margin: 0;
-}
-.input-container {
-    background: #f9f9f9;
-    padding: 1rem;
-    border-radius: 10px;
-    margin: 1rem 0;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-.ai-response {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-left: 5px solid #007BFF;
-    margin: 1rem 0;
-    border-radius: 10px;
-}
-.user-message {
-    background: #007BFF;
-    color: white;
-    padding: 1rem;
-    border-radius: 10px;
-    margin: 1rem 0;
-}
+    .main-header h1 {
+        margin: 0;
+        font-size: 2.8rem;
+        font-weight: 700;
+    }
+
+    .main-header p {
+        margin-top: 0.5rem;
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+
+    .input-box {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+
+    .response-box {
+        background: #ffffff;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+        margin-top: 1rem;
+        border-left: 5px solid #1a73e8;
+    }
+
+    .submit-btn button {
+        background-color: #1a73e8 !important;
+        color: white !important;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Header Section
+# Header
 st.markdown("""
 <div class="main-header">
     <h1>Corval.ai Memory Assistant</h1>
@@ -61,24 +72,25 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Environment Variables
+# ✅ Load Environment Variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+# ✅ Validate Environment
 if not all([OPENAI_API_KEY, SUPABASE_URL, SUPABASE_KEY]):
-    st.error("⚠️ Missing environment variables. Please check your API keys.")
+    st.error("⚠️ Missing environment variables. Please check API keys in Railway or .env.")
     st.stop()
 
-# Initialize Clients
+# ✅ Initialize Clients
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Session State
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# ✅ State Variables
+if "latest_response" not in st.session_state:
+    st.session_state.latest_response = None
 
-# Functions
+# ✅ Functions
 def store_memory(note):
     embedding = openai_client.embeddings.create(
         model="text-embedding-3-small",
@@ -107,54 +119,51 @@ def retrieve_context(query, match_count=5):
 
 def ask_ai(question):
     context = retrieve_context(question)
-    context_text = "\n".join(context) if context else "No relevant memories found."
+    context_text = "\n".join(context) if context else "No relevant context found."
 
     response = openai_client.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": "You are an AI assistant helping with knowledge recall."},
+            {"role": "system", "content": "You are an expert AI memory assistant."},
             {"role": "user", "content": f"Context:\n{context_text}\n\nQuestion: {question}"}
         ]
     )
-    return response.choices[0].message.content, context
+    return response.choices[0].message.content
 
-# Input UI
+# ✅ Input Section
 with st.container():
-    st.markdown('<div class="input-container">', unsafe_allow_html=True)
-    user_input = st.text_area("💬 Type your message...", key="user_input", placeholder="Example: add: Project meeting notes", height=80)
-    submit = st.button("📤 Submit", type="primary")
+    st.markdown('<div class="input-box">', unsafe_allow_html=True)
+    user_input = st.text_area("💬 Type your message...", placeholder="Example: add: Project meeting notes", key="user_input")
+    submit = st.button("📤 Submit", key="submit_btn")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Handle Submit
+# ✅ Handle Submission
 if submit and user_input.strip():
-    message = user_input.strip()
-    st.session_state.messages.insert(0, {"role": "user", "content": message})
-
-    # Clear input immediately
+    if user_input.lower().startswith("add:"):
+        note = user_input[4:].strip()
+        store_memory(note)
+        st.session_state.latest_response = f"✅ Memory stored: {note}"
+    else:
+        st.session_state.latest_response = ask_ai(user_input)
+    
+    # ✅ Clear text input after submit
     st.session_state.user_input = ""
 
-    if message.lower().startswith("add:"):
-        note = message[4:].strip()
-        store_memory(note)
-        st.session_state.messages.insert(0, {"role": "system", "content": f"✅ Memory stored: {note}"})
-    else:
-        with st.spinner("🤔 Thinking..."):
-            answer, context = ask_ai(message)
-            st.session_state.messages.insert(0, {
-                "role": "assistant",
-                "content": answer,
-                "context": context
-            })
+# ✅ Show Latest Response Directly Under Input
+if st.session_state.latest_response:
+    st.markdown(f"""
+    <div class="response-box">
+        <strong>🤖 AI Assistant:</strong><br>{st.session_state.latest_response}
+    </div>
+    """, unsafe_allow_html=True)
 
-# Show Latest Response Directly Under Input
-for msg in st.session_state.messages[:1]:  # Show only latest
-    if msg["role"] == "user":
-        st.markdown(f'<div class="user-message">{msg["content"]}</div>', unsafe_allow_html=True)
-    elif msg["role"] == "assistant":
-        st.markdown(f'<div class="ai-response"><strong>🤖 AI:</strong> {msg["content"]}</div>', unsafe_allow_html=True)
-        if msg.get("context"):
-            with st.expander("📚 Relevant Memories"):
-                for i, memory in enumerate(msg["context"], 1):
-                    st.markdown(f"**{i}.** {memory}")
-    else:
-        st.success(msg["content"])
+# ✅ Sidebar: Quick Stats
+with st.sidebar:
+    st.markdown("### 📊 Quick Stats")
+    st.metric("Memories", "∞")  # Replace with actual count later
+    st.metric("Questions", "∞")
+    st.markdown("---")
+    st.markdown("### 💡 How to Use")
+    st.markdown("- **Add Memory:** `add: Project meeting notes`")
+    st.markdown("- **Ask Question:** `What did we decide about deadlines?`")
+
