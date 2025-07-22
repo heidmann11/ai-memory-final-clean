@@ -4,25 +4,19 @@ FROM python:3.9-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . .
 
-# Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# ✅ Explicitly set environment variables for Streamlit from Railway
+ENV STREAMLIT_SERVER_PORT=$PORT
+ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 
-# Environment variables (placeholders, real values injected by Railway)
-ENV OPENAI_API_KEY=""
-ENV SUPABASE_URL=""
-ENV SUPABASE_KEY=""
-
-# Expose port for Streamlit (Railway injects $PORT)
+# ✅ Expose port (important for Railway)
 EXPOSE 8080
 
-# Run Streamlit app
+# ✅ Command to run the app
 CMD ["sh", "-c", "streamlit run memory_chatbot.py --server.port $PORT --server.address 0.0.0.0"]
