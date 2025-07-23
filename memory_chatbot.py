@@ -1,116 +1,114 @@
 import streamlit as st
-from PIL import Image
+from dotenv import load_dotenv
+from openai import OpenAI
+from supabase import create_client
+from datetime import datetime
 import os
 
-# ✅ Page Configuration
-st.set_page_config(page_title="Corval.ai Memory Assistant", layout="wide")
+# ✅ Load environment variables
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-# ✅ Load Logo
-logo_path = os.path.join("app", "static", "corval_logo.png")
-if os.path.exists(logo_path):
-    logo = Image.open(logo_path)
-else:
-    st.error("Logo file not found. Please ensure corval_logo.png is in app/static/")
+# ✅ Validate keys
+if not all([OPENAI_API_KEY, SUPABASE_URL, SUPABASE_KEY]):
+    st.error("❌ Missing API keys. Check .env or Railway variables.")
+    st.stop()
 
-# ✅ Custom CSS for Styling
-st.markdown("""
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f9fafb;
-        }
-        .logo-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
-        .banner {
-            text-align: center;
-            background: linear-gradient(90deg, #0f172a, #1d4ed8);
-            color: white;
-            padding: 40px 20px;
-            border-radius: 12px;
-            margin: 10px auto;
-            width: 90%;
-        }
-        .banner h1 {
-            font-size: 36px;
-            font-weight: 700;
-            margin: 0;
-        }
-        .banner p {
-            font-size: 16px;
-            margin: 10px 0 0;
-        }
-        .response-container {
-            background: white;
-            padding: 20px;
-            margin: 20px auto;
-            width: 90%;
-            min-height: 350px;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-        .input-container {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            max-width: 800px;
-            background: white;
-            padding: 15px;
-            border-radius: 50px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-            display: flex;
-            justify-content: space-between;
-        }
-        .input-container input {
-            width: 85%;
-            padding: 10px 15px;
-            border: none;
-            outline: none;
-            font-size: 16px;
-        }
-        .input-container button {
-            background: #2563eb;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .input-container button:hover {
-            background: #1d4ed8;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# ✅ Initialize clients
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
+supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# ✅ Logo at Top Center
-st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-if logo:
-    st.image(logo, width=180)
-st.markdown('</div>', unsafe_allow_html=True)
+# ✅ Streamlit Page Config
+st.set_page_config(page_title="Corval AI Memory Assistant", layout="wide")
+st.title("🧠 Corval AI Memory Assistant")
+st.caption("Add notes, ask questions, and get contextual answers from stored memory.")
 
-# ✅ Header Banner
-st.markdown("""
-<div class="banner">
-    <h1>Corval.ai Memory Assistant</h1>
-    <p>Your intelligent knowledge companion that never forgets.</p>
-</div>
-""", unsafe_allow_html=True)
+# ✅ Session State for Messages
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# ✅ Response Section
-st.markdown('<div class="response-container">', unsafe_allow_html=True)
-st.write("Latest responses will appear here...")
-st.markdown('</div>', unsafe_allow_html=True)
+# ✅ Helper Functions
+def store_memory(note):
+    """Store note and embedding in Supabase"""
+    try:
+        embedding = openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=note
+        ).data[0].embedding
 
-# ✅ Floating Input Bar
-st.markdown("""
-<div class="input-container">
-    <input type="text" placeholder="Ask me something or add your note..." />
-    <button>Submit</button>
-</div>
-""", unsafe_allow_html=True)
+        supabase_client.table("project_memory").insert({
+            "content": note,
+            "embedding": embedding,
+            "created_at": datetime.now().isoformat()
+        }).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error storing memory: {e}")
+        return False
+
+def retrieve_context(query, match_count=5):
+    """Fetch similar memories from Supabase"""
+    try:
+        query_embedding = openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=query
+        ).data[0].embedding
+
+        response = supabase_client.rpc("match_project_memory", {
+            "query_embedding": query_embedding,
+            "match_threshold": 0.0,
+            "match_count": match_count
+        }).execute()
+
+        if response.data:
+            return [item["content"] for item in response.data]
+        return []
+    except Exception as e:
+        st.error(f"Error retrieving context: {e}")
+        return []
+
+def ask_ai(question):
+    """Generate AI response with context"""
+    context_list = retrieve_context(question)
+    context = "\n".join(context_list) if context_list else "No relevant memories found."
+    prompt = f"Context:\n{context}\n\nQuestion: {question}"
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that uses stored context to answer questions."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content, context_list
+    except Exception as e:
+        st.error(f"Error from OpenAI: {e}")
+        return "Error generating response", []
+
+# ✅ UI Input
+user_input = st.text_input("💬 Enter your question or add a note (use 'add: your note')", "")
+
+if st.button("Submit"):
+    if user_input.strip():
+        if user_input.lower().startswith("add:"):
+            note = user_input[4:].strip()
+            if store_memory(note):
+                st.success(f"✅ Memory stored: {note}")
+        else:
+            with st.spinner("🤔 Thinking..."):
+                answer, context_used = ask_ai(user_input)
+                st.session_state.messages.append({"question": user_input, "answer": answer, "context": context_used})
+
+# ✅ Display Latest Answer
+if st.session_state.messages:
+    st.subheader("Latest Response")
+    last_msg = st.session_state.messages[-1]
+    st.markdown(f"**You asked:** {last_msg['question']}")
+    st.write(f"**AI Answer:** {last_msg['answer']}")
+    if last_msg['context']:
+        with st.expander("📚 Context Used"):
+            for i, c in enumerate(last_msg['context'], 1):
+                st.write(f"{i}. {c}")
