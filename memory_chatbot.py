@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image
 import os
+import base64
 from dotenv import load_dotenv
 from openai import OpenAI
 from supabase import create_client
@@ -77,44 +78,62 @@ st.markdown("""
         header {visibility: hidden;}
         
         .logo-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 15px;
-            padding-top: 15px;
-        }
-        
-        .logo-fallback {
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-            margin: 0 auto;
-            max-width: 300px;
-        }
-        
-        .brand-icon {
-            font-size: 3rem;
-            margin-bottom: 8px;
-        }
-        
-        .brand-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            font-family: 'Arial', sans-serif;
+            display: none; /* We'll integrate logo into banner */
         }
         
         .banner {
             text-align: center;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px 20px;
+            padding: 20px;
             border-radius: 15px;
-            margin: 5px auto 10px auto;
+            margin: 10px auto 15px auto;
             max-width: 800px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .banner-content {
+            text-align: center;
+        }
+        
+        .logo-in-banner {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+        
+        .logo-fallback {
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+        }
+        
+        .brand-icon {
+            font-size: 2rem;
+            margin-bottom: 2px;
+        }
+        
+        .brand-text {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            font-family: 'Arial', sans-serif;
         }
         
         .banner h1 {
@@ -318,7 +337,7 @@ def fallback_search(query_embedding, threshold=0.2, limit=5):
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# ✅ Logo - Multiple path attempts for deployment
+# ✅ Integrated Logo + Banner Header
 logo_paths = [
     "corval_logo.png",  # Root directory
     "static/corval_logo.png",  # Static folder
@@ -327,30 +346,33 @@ logo_paths = [
 ]
 
 logo_found = False
-st.markdown('<div class="logo-container">', unsafe_allow_html=True)
+logo_element = ""
 
 for logo_path in logo_paths:
     if os.path.exists(logo_path):
-        st.image(logo_path, width=250)  # Made bigger
+        # Convert image to base64 for inline embedding
+        with open(logo_path, "rb") as img_file:
+            b64_string = base64.b64encode(img_file.read()).decode()
+        logo_element = f'<div class="logo-in-banner"><img src="data:image/png;base64,{b64_string}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover;"></div>'
         logo_found = True
         break
 
 if not logo_found:
-    # Enhanced fallback with brand colors
-    st.markdown('''
+    logo_element = '''
     <div class="logo-fallback">
         <div class="brand-icon">🧠</div>
-        <div class="brand-text">CORVAL.AI</div>
+        <div class="brand-text">AI</div>
     </div>
-    ''', unsafe_allow_html=True)
+    '''
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ✅ Banner
-st.markdown("""
+# Unified header with logo + banner
+st.markdown(f"""
 <div class="banner">
-    <h1>🧠 Corval.ai Memory Assistant</h1>
-    <p>Your intelligent knowledge companion that never forgets.</p>
+    {logo_element}
+    <div class="banner-content">
+        <h1>Corval.ai Memory Assistant</h1>
+        <p>Your intelligent knowledge companion that never forgets.</p>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -522,15 +544,15 @@ No relevant memories were found in the database. Please provide a helpful genera
     
     st.rerun()
 
-# ✅ Compact sections at bottom
+# ✅ Ultra-compact sections at bottom
 col1, col2 = st.columns(2)
 
 with col1:
-    with st.expander("🔧 Debug"):
-        if st.button("Test DB", key="test_db"):
+    with st.expander("🔧"):
+        if st.button("Test", key="test_db"):
             try:
                 result = supabase.table("project_memory").select("id").limit(1).execute()
-                st.success(f"✅ Connected ({len(result.data)} records)")
+                st.success(f"✅ Connected ({len(result.data)})")
                 try:
                     test_embedding = [0.1] * 1536
                     rpc_result = supabase.rpc("match_project_memory", {
@@ -540,18 +562,16 @@ with col1:
                     }).execute()
                     st.success("✅ RPC works!")
                 except:
-                    st.info("💡 Using fallback (works fine)")
+                    st.info("💡 Fallback mode")
             except Exception:
-                st.error("❌ DB Error")
+                st.error("❌ Error")
 
 with col2:
-    with st.expander("💡 Help"):
-        st.markdown("**Add:** `add: note` • **Ask:** natural questions • **Tip:** Press Enter to send")
+    with st.expander("💡"):
+        st.markdown("**Add:** `add: note` • **Ask:** questions • **Enter:** to send")
 
-# ✅ Clear Chat Button
+# ✅ Compact clear button
 if st.session_state.chat_history:
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("🗑️ Clear Chat", use_container_width=True):
-            st.session_state.chat_history = []
-            st.rerun()
+    if st.button("🗑️ Clear", use_container_width=True):
+        st.session_state.chat_history = []
+        st.rerun()
