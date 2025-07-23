@@ -85,15 +85,16 @@ st.markdown("""
             text-align: center;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 10px auto 15px auto;
-            max-width: 800px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 30px 40px;
+            border-radius: 0;
+            margin: 0;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 30px;
         }
         
         .banner-content {
@@ -101,38 +102,40 @@ st.markdown("""
         }
         
         .logo-in-banner {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
+            font-size: 3rem;
             flex-shrink: 0;
+            border: 3px solid rgba(255,255,255,0.3);
         }
         
         .logo-fallback {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.15);
             border-radius: 50%;
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin-right: 20px;
+            margin-right: 30px;
+            border: 3px solid rgba(255,255,255,0.3);
         }
         
         .brand-icon {
-            font-size: 2rem;
-            margin-bottom: 2px;
+            font-size: 3.5rem;
+            margin-bottom: 5px;
         }
         
         .brand-text {
-            font-size: 0.6rem;
+            font-size: 1rem;
             font-weight: 700;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             font-family: 'Arial', sans-serif;
         }
         
@@ -353,7 +356,7 @@ for logo_path in logo_paths:
         # Convert image to base64 for inline embedding
         with open(logo_path, "rb") as img_file:
             b64_string = base64.b64encode(img_file.read()).decode()
-        logo_element = f'<div class="logo-in-banner"><img src="data:image/png;base64,{b64_string}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover;"></div>'
+        logo_element = f'<div class="logo-in-banner"><img src="data:image/png;base64,{b64_string}" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover;"></div>'
         logo_found = True
         break
 
@@ -402,11 +405,11 @@ if st.session_state.chat_history:
     for msg in st.session_state.chat_history[-10:]:
         st.markdown(msg, unsafe_allow_html=True)
 else:
+    # Optional: Remove this entire section if you don't want the welcome message
     st.markdown("""
     <div class="empty-state">
         <h3>👋 Welcome!</h3>
-        <p>Start by adding a memory with <strong>"add: your note"</strong><br>
-        or ask me anything about your stored knowledge!</p>
+        <p>Add memories with "add: note" or ask questions</p>
     </div>
     """, unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
@@ -418,11 +421,12 @@ with st.form(key="chat_form", clear_on_submit=True):
     col1, col2 = st.columns([4, 1])
     
     with col1:
-        user_input = st.text_input(
+        user_input = st.text_area(
             "Message", 
             key="user_input_form", 
             label_visibility="collapsed",
-            placeholder="Type 'add: your note' to store memory, or ask a question... (Press Enter to send)"
+            placeholder="Type 'add: your note' to store memory, or ask a question... (Press Enter to send)",
+            height=80
         )
     
     with col2:
@@ -544,34 +548,10 @@ No relevant memories were found in the database. Please provide a helpful genera
     
     st.rerun()
 
-# ✅ Ultra-compact sections at bottom
-col1, col2 = st.columns(2)
-
-with col1:
-    with st.expander("🔧"):
-        if st.button("Test", key="test_db"):
-            try:
-                result = supabase.table("project_memory").select("id").limit(1).execute()
-                st.success(f"✅ Connected ({len(result.data)})")
-                try:
-                    test_embedding = [0.1] * 1536
-                    rpc_result = supabase.rpc("match_project_memory", {
-                        "query_embedding": test_embedding,
-                        "match_threshold": 0.1,
-                        "match_count": 1
-                    }).execute()
-                    st.success("✅ RPC works!")
-                except:
-                    st.info("💡 Fallback mode")
-            except Exception:
-                st.error("❌ Error")
-
-with col2:
-    with st.expander("💡"):
-        st.markdown("**Add:** `add: note` • **Ask:** questions • **Enter:** to send")
-
-# ✅ Compact clear button
+# ✅ Simple clear button (only show if there's chat history)
 if st.session_state.chat_history:
-    if st.button("🗑️ Clear", use_container_width=True):
-        st.session_state.chat_history = []
-        st.rerun()
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        if st.button("🗑️ Clear Chat", use_container_width=True):
+            st.session_state.chat_history = []
+            st.rerun()
