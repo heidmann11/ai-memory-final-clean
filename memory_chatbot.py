@@ -445,14 +445,31 @@ if submit_btn and user_input and user_input.strip():
         f'<div class="chat-message-wrapper"><div class="user-message"><strong>You:</strong> {user_input}</div></div>'
     )
     
+    # DEBUG: Show what we received
+    st.session_state.chat_history.append(
+        f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Received input "{user_input}" (length: {len(user_input)})</div></div>'
+    )
+    
     with st.spinner('🤔 Thinking...'):
         try:
             if user_input.lower().startswith("add:"):
+                st.session_state.chat_history.append(
+                    f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Detected ADD command</div></div>'
+                )
+                
                 # ✅ Store Note in Supabase with better error handling
                 content = user_input[4:].strip()
                 
+                st.session_state.chat_history.append(
+                    f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Extracted content: "{content}"</div></div>'
+                )
+                
                 if content:
                     try:
+                        st.session_state.chat_history.append(
+                            f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Starting embedding creation...</div></div>'
+                        )
+                        
                         # Create embedding (minimal logging)
                         embedding_response = openai_client.embeddings.create(
                             model="text-embedding-3-small",
@@ -460,12 +477,20 @@ if submit_btn and user_input and user_input.strip():
                         )
                         embedding = embedding_response.data[0].embedding
                         
+                        st.session_state.chat_history.append(
+                            f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Embedding created, now saving to Supabase...</div></div>'
+                        )
+                        
                         # Save to Supabase  
                         result = supabase.table("project_memory").insert({
                             "content": content,
                             "embedding": embedding,
                             "created_at": datetime.utcnow().isoformat()
                         }).execute()
+                        
+                        st.session_state.chat_history.append(
+                            f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Supabase result: {result}</div></div>'
+                        )
                         
                         if result.data and len(result.data) > 0:
                             st.session_state.chat_history.append(
@@ -478,7 +503,7 @@ if submit_btn and user_input and user_input.strip():
                             
                     except Exception as embed_error:
                         st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Error: {str(embed_error)[:150]}</div></div>'
+                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Error: {str(embed_error)}</div></div>'
                         )
                 else:
                     st.session_state.chat_history.append(
