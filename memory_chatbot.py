@@ -403,20 +403,19 @@ except Exception:
 st.markdown('<div class="input-section-top">', unsafe_allow_html=True)
 st.markdown('<div class="input-container">', unsafe_allow_html=True)
 
-with st.form(key="chat_form", clear_on_submit=True):
+with st.form(key="main_chat_form", clear_on_submit=True):  # Changed key to be unique
     col1, col2 = st.columns([4, 1])
     
     with col1:
         user_input = st.text_area(
             "Message", 
-            key="user_input_form", 
+            key="main_user_input", 
             label_visibility="collapsed",
             placeholder="Type 'add: your note' to store memory, or ask a question... (Press Enter to send)",
             height=80
         )
     
     with col2:
-        # Remove type="primary" to avoid red button
         submit_btn = st.form_submit_button("💜 Send", use_container_width=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
