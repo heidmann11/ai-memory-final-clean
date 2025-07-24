@@ -422,7 +422,7 @@ with st.form(key="main_chat_form", clear_on_submit=True):
             "Message", 
             key="main_user_input", 
             label_visibility="collapsed",
-            placeholder="Type 'add: your note' to store memory, or ask a question... (Press Enter to send)",
+            placeholder="💡 Type 'add: your note' to save information, or ask me any question...",
             height=80
         )
     
@@ -439,47 +439,26 @@ if st.session_state.chat_history:
         st.markdown(msg, unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ✅ Process Input with better error handling
+# ✅ Process Input - Clean Production Version
 if submit_btn and user_input and user_input.strip():
     st.session_state.chat_history.append(
         f'<div class="chat-message-wrapper"><div class="user-message"><strong>You:</strong> {user_input}</div></div>'
     )
     
-    # DEBUG: Show what we received
-    st.session_state.chat_history.append(
-        f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Received input "{user_input}" (length: {len(user_input)})</div></div>'
-    )
-    
     with st.spinner('🤔 Thinking...'):
         try:
             if user_input.lower().startswith("add:"):
-                st.session_state.chat_history.append(
-                    f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Detected ADD command</div></div>'
-                )
-                
-                # ✅ Store Note in Supabase with better error handling
+                # ✅ Store Note in Supabase
                 content = user_input[4:].strip()
-                
-                st.session_state.chat_history.append(
-                    f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Extracted content: "{content}"</div></div>'
-                )
                 
                 if content:
                     try:
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Starting embedding creation...</div></div>'
-                        )
-                        
-                        # Create embedding (minimal logging)
+                        # Create embedding
                         embedding_response = openai_client.embeddings.create(
                             model="text-embedding-3-small",
                             input=content
                         )
                         embedding = embedding_response.data[0].embedding
-                        
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Embedding created, now saving to Supabase...</div></div>'
-                        )
                         
                         # Save to Supabase  
                         result = supabase.table("project_memory").insert({
@@ -488,26 +467,22 @@ if submit_btn and user_input and user_input.strip():
                             "created_at": datetime.utcnow().isoformat()
                         }).execute()
                         
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">🐛 DEBUG: Supabase result: {result}</div></div>'
-                        )
-                        
                         if result.data and len(result.data) > 0:
                             st.session_state.chat_history.append(
-                                f'<div class="chat-message-wrapper"><div class="system-message">✅ Memory saved: "{content[:50]}{"..." if len(content) > 50 else ""}"</div></div>'
+                                f'<div class="chat-message-wrapper"><div class="system-message">✅ Memory saved: "{content[:60]}{"..." if len(content) > 60 else ""}"</div></div>'
                             )
                         else:
                             st.session_state.chat_history.append(
-                                f'<div class="chat-message-wrapper"><div class="system-message">❌ Failed to save memory - Supabase returned no data</div></div>'
+                                f'<div class="chat-message-wrapper"><div class="system-message">❌ Failed to save memory - please try again</div></div>'
                             )
                             
                     except Exception as embed_error:
                         st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Error: {str(embed_error)}</div></div>'
+                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Error saving memory: {str(embed_error)[:100]}...</div></div>'
                         )
                 else:
                     st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">❌ Please provide content after "add:"</div></div>'
+                        f'<div class="chat-message-wrapper"><div class="system-message">❌ Please provide content after "add:" (example: add: your note here)</div></div>'
                     )
             else:
                 # ✅ Query Mode (clean version)
@@ -568,7 +543,10 @@ No relevant memories were found in the database. Please provide a helpful genera
                     )
                     
                     response_text = chat_response.choices[0].message.content
-                    response_text += f"\n\n💡 *{found_memories_text}*"
+                    
+                    # Only show memory info if memories were found
+                    if context_items:
+                        response_text += f"\n\n💡 *Found {len(context_items)} relevant memories*"
                     
                     st.session_state.chat_history.append(
                         f'<div class="chat-message-wrapper"><div class="ai-message"><strong>🤖 AI:</strong> {response_text}</div></div>'
@@ -586,109 +564,20 @@ No relevant memories were found in the database. Please provide a helpful genera
     
     st.rerun()
 
-# ✅ Simple clear button and debug options
+# ✅ Simple clean buttons
 if st.session_state.chat_history:
     col1, col2, col3 = st.columns([1, 1, 1])
-    with col1:
+    with col2:
         if st.button("🗑️ Clear Chat", use_container_width=True, key="clear_chat"):
             st.session_state.chat_history = []
             st.rerun()
-    with col2:
-        if st.button("🔍 Debug Memories", use_container_width=True, key="debug_memories"):
-            try:
-                all_memories = supabase.table("project_memory").select("id, content").execute()
-                debug_text = f"**All stored memories ({len(all_memories.data)}):**\n"
-                for i, mem in enumerate(all_memories.data, 1):
-                    debug_text += f"{i}. {mem['content'][:100]}{'...' if len(mem['content']) > 100 else ''}\n"
-                
-                st.session_state.chat_history.append(
-                    f'<div class="chat-message-wrapper"><div class="system-message">{debug_text}</div></div>'
-                )
-                st.rerun()
-            except Exception as e:
-                st.session_state.chat_history.append(
-                    f'<div class="chat-message-wrapper"><div class="system-message">Debug error: {str(e)}</div></div>'
-                )
-                st.rerun()
-    with col3:
-        if st.button("⚙️ System Check", use_container_width=True, key="system_check"):
-            try:
-                # Test OpenAI
-                test_response = openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": "user", "content": "Hello"}],
-                    max_tokens=10
-                )
-                openai_status = f"✅ OpenAI: {test_response.choices[0].message.content[:20]}..."
-                
-                # Test Supabase
-                supabase_test = supabase.table("project_memory").select("id").limit(1).execute()
-                supabase_status = f"✅ Supabase: Connected ({len(supabase_test.data)} records found)"
-                
-                # Test embedding
-                embed_test = openai_client.embeddings.create(
-                    model="text-embedding-3-small", 
-                    input="test"
-                )
-                embed_status = f"✅ Embeddings: Working ({len(embed_test.data[0].embedding)} dims)"
-                
-                status_report = f"**System Status:**\n{openai_status}\n{supabase_status}\n{embed_status}"
-                
-            except Exception as e:
-                status_report = f"**System Status:**\n❌ Error: {str(e)}"
-            
-            st.session_state.chat_history.append(
-                f'<div class="chat-message-wrapper"><div class="system-message">{status_report}</div></div>'
-            )
-            st.rerun()
 else:
-    # Show options even when no chat history
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col1:
-        if st.button("🔍 Debug Memories", use_container_width=True, key="debug_memories_empty"):
-            try:
-                all_memories = supabase.table("project_memory").select("id, content").execute()
-                debug_text = f"**All stored memories ({len(all_memories.data)}):**\n"
-                for i, mem in enumerate(all_memories.data, 1):
-                    debug_text += f"{i}. {mem['content'][:100]}{'...' if len(mem['content']) > 100 else ''}\n"
-                
-                st.session_state.chat_history.append(
-                    f'<div class="chat-message-wrapper"><div class="system-message">{debug_text}</div></div>'
-                )
-                st.rerun()
-            except Exception as e:
-                st.session_state.chat_history.append(
-                    f'<div class="chat-message-wrapper"><div class="system-message">Debug error: {str(e)}</div></div>'
-                )
-                st.rerun()
-    with col2:
-        if st.button("⚙️ System Check", use_container_width=True, key="system_check_empty"):
-            try:
-                # Test OpenAI
-                test_response = openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": "user", "content": "Hello"}],
-                    max_tokens=10
-                )
-                openai_status = f"✅ OpenAI: {test_response.choices[0].message.content[:20]}..."
-                
-                # Test Supabase
-                supabase_test = supabase.table("project_memory").select("id").limit(1).execute()
-                supabase_status = f"✅ Supabase: Connected ({len(supabase_test.data)} records found)"
-                
-                # Test embedding
-                embed_test = openai_client.embeddings.create(
-                    model="text-embedding-3-small", 
-                    input="test"
-                )
-                embed_status = f"✅ Embeddings: Working ({len(embed_test.data[0].embedding)} dims)"
-                
-                status_report = f"**System Status:**\n{openai_status}\n{supabase_status}\n{embed_status}"
-                
-            except Exception as e:
-                status_report = f"**System Status:**\n❌ Error: {str(e)}"
-            
-            st.session_state.chat_history.append(
-                f'<div class="chat-message-wrapper"><div class="system-message">{status_report}</div></div>'
-            )
-            st.rerun()
+    # Show helpful tips when no chat history
+    st.markdown("""
+    <div style="text-align: center; color: #666; font-style: italic; padding: 20px;">
+        <h4>💡 How to use your Memory Assistant:</h4>
+        <p><strong>To save memories:</strong> Type "add: your information here"</p>
+        <p><strong>To ask questions:</strong> Just type your question normally</p>
+        <p>Your memories are stored permanently and the AI will use them to answer your questions!</p>
+    </div>
+    """, unsafe_allow_html=True)
