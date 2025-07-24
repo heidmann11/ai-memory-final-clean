@@ -404,14 +404,7 @@ st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 if st.session_state.chat_history:
     for msg in st.session_state.chat_history[-10:]:
         st.markdown(msg, unsafe_allow_html=True)
-else:
-    # Optional: Remove this entire section if you don't want the welcome message
-    st.markdown("""
-    <div class="empty-state">
-        <h3>👋 Welcome!</h3>
-        <p>Add memories with "add: note" or ask questions</p>
-    </div>
-    """, unsafe_allow_html=True)
+# No welcome message - cleaner interface
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ✅ Sticky Input Section (like ChatGPT)
