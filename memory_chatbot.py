@@ -453,111 +453,67 @@ if submit_btn and user_input and user_input.strip():
                 
                 if content:
                     try:
-                        # Step 1: Create embedding with detailed logging
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">🔄 Creating embedding for: "{content[:30]}..."</div></div>'
-                        )
-                        
+                        # Create embedding (minimal logging)
                         embedding_response = openai_client.embeddings.create(
                             model="text-embedding-3-small",
                             input=content
                         )
                         embedding = embedding_response.data[0].embedding
                         
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">✅ Embedding created successfully (length: {len(embedding)})</div></div>'
-                        )
-                        
-                        # Step 2: Save to Supabase with detailed logging
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">💾 Inserting into Supabase...</div></div>'
-                        )
-                        
+                        # Save to Supabase  
                         result = supabase.table("project_memory").insert({
                             "content": content,
                             "embedding": embedding,
                             "created_at": datetime.utcnow().isoformat()
                         }).execute()
                         
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">📊 Supabase response: {len(result.data) if result.data else 0} rows affected</div></div>'
-                        )
-                        
                         if result.data and len(result.data) > 0:
                             st.session_state.chat_history.append(
-                                f'<div class="chat-message-wrapper"><div class="system-message">✅ Memory saved! ID: {result.data[0].get("id", "unknown")}</div></div>'
+                                f'<div class="chat-message-wrapper"><div class="system-message">✅ Memory saved: "{content[:50]}{"..." if len(content) > 50 else ""}"</div></div>'
                             )
                         else:
                             st.session_state.chat_history.append(
-                                f'<div class="chat-message-wrapper"><div class="system-message">❌ Supabase insert failed - no data in response</div></div>'
+                                f'<div class="chat-message-wrapper"><div class="system-message">❌ Failed to save memory - Supabase returned no data</div></div>'
                             )
                             
                     except Exception as embed_error:
-                        error_details = str(embed_error)
                         st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Add Error: {error_details}</div></div>'
+                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Error: {str(embed_error)[:150]}</div></div>'
                         )
                 else:
                     st.session_state.chat_history.append(
                         f'<div class="chat-message-wrapper"><div class="system-message">❌ Please provide content after "add:"</div></div>'
                     )
             else:
-                # ✅ Query Mode with detailed debugging
+                # ✅ Query Mode (clean version)
                 try:
-                    st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">🔍 Creating query embedding...</div></div>'
-                    )
-                    
+                    # Create query embedding
                     query_embedding_response = openai_client.embeddings.create(
                         model="text-embedding-3-small",
                         input=user_input
                     )
                     query_embedding = query_embedding_response.data[0].embedding
                     
-                    st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">✅ Query embedding created (length: {len(query_embedding)})</div></div>'
-                    )
-                    
                     context_items = []
                     
                     # Try RPC function first, fallback silently
-                    st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">🔎 Searching memories...</div></div>'
-                    )
-                    
                     try:
                         context_result = supabase.rpc("match_project_memory", {
                             "query_embedding": query_embedding,
-                            "match_threshold": 0.05,  # Much lower threshold
+                            "match_threshold": 0.05,
                             "match_count": 5
                         }).execute()
                         
                         context_items = context_result.data if context_result.data else []
                         search_method = "RPC"
                         
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">📊 RPC search found {len(context_items)} memories</div></div>'
-                        )
-                        
                     except Exception as rpc_error:
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">⚠️ RPC failed: {str(rpc_error)[:50]}... Using fallback</div></div>'
-                        )
-                        
                         context_items = fallback_search(query_embedding)
                         search_method = "fallback"
-                        
-                        st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">📊 Fallback search found {len(context_items)} memories</div></div>'
-                        )
                     
                     context = "\n".join([item['content'] for item in context_items])
                     
-                    # Always try OpenAI regardless of memory results
-                    st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">🤖 Calling OpenAI GPT-4o-mini...</div></div>'
-                    )
-                    
+                    # Call OpenAI
                     if context:
                         prompt = f"""You are a helpful AI assistant with access to the user's stored memories.
 
@@ -568,13 +524,13 @@ Relevant Memories:
 
 Please provide a helpful answer based on the user's question and the relevant memories above."""
                         
-                        found_memories_text = f" (Found {len(context_items)} relevant memories using {search_method})"
+                        found_memories_text = f" (Found {len(context_items)} relevant memories)"
                     else:
                         prompt = f"""You are a helpful AI assistant. The user asked: {user_input}
 
 No relevant memories were found in the database. Please provide a helpful general response to their question."""
                         
-                        found_memories_text = f" (No relevant memories found using {search_method})"
+                        found_memories_text = f" (No relevant memories found)"
                     
                     chat_response = openai_client.chat.completions.create(
                         model="gpt-4o-mini",
@@ -590,17 +546,12 @@ No relevant memories were found in the database. Please provide a helpful genera
                     response_text += f"\n\n💡 *{found_memories_text}*"
                     
                     st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">✅ OpenAI response received ({len(response_text)} chars)</div></div>'
-                    )
-                    
-                    st.session_state.chat_history.append(
                         f'<div class="chat-message-wrapper"><div class="ai-message"><strong>🤖 AI:</strong> {response_text}</div></div>'
                     )
                     
                 except Exception as query_error:
-                    error_details = str(query_error)
                     st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">❌ Query Error: {error_details}</div></div>'
+                        f'<div class="chat-message-wrapper"><div class="system-message">❌ Query failed: {str(query_error)[:100]}</div></div>'
                     )
         
         except Exception:
