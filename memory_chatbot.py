@@ -311,7 +311,7 @@ def cosine_similarity(a, b):
     """Calculate cosine similarity between two vectors"""
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
-def fallback_search(query_embedding, threshold=0.2, limit=5):
+def fallback_search(query_embedding, threshold=0.1, limit=5):
     """Fallback search when RPC function doesn't work"""
     try:
         result = supabase.table("project_memory").select("id, content, embedding").execute()
@@ -486,7 +486,7 @@ if submit_btn and user_input.strip():
                     try:
                         context_result = supabase.rpc("match_project_memory", {
                             "query_embedding": query_embedding,
-                            "match_threshold": 0.2,
+                            "match_threshold": 0.1,
                             "match_count": 5
                         }).execute()
                         
