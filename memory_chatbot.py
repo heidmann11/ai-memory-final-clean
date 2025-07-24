@@ -430,7 +430,7 @@ with st.form(key="chat_form", clear_on_submit=True):
         )
     
     with col2:
-        submit_btn = st.form_submit_button("Send", type="primary")
+        submit_btn = st.form_submit_button("💜 Send", type="primary", use_container_width=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
