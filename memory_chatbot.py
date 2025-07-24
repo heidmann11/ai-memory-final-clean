@@ -321,7 +321,7 @@ def cosine_similarity(a, b):
     """Calculate cosine similarity between two vectors"""
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
-def fallback_search(query_embedding, threshold=0.1, limit=5):
+def fallback_search(query_embedding, threshold=0.05, limit=5):
     """Fallback search when RPC function doesn't work"""
     try:
         result = supabase.table("project_memory").select("id, content, embedding").execute()
@@ -333,6 +333,7 @@ def fallback_search(query_embedding, threshold=0.1, limit=5):
         for item in result.data:
             if item['embedding']:
                 similarity = cosine_similarity(query_embedding, item['embedding'])
+                # Much lower threshold for better recall
                 if similarity > threshold:
                     matches.append({
                         'id': item['id'],
@@ -506,14 +507,16 @@ if submit_btn and user_input and user_input.strip():
                     try:
                         context_result = supabase.rpc("match_project_memory", {
                             "query_embedding": query_embedding,
-                            "match_threshold": 0.1,
+                            "match_threshold": 0.05,  # Much lower threshold
                             "match_count": 5
                         }).execute()
                         
                         context_items = context_result.data if context_result.data else []
+                        search_method = "RPC"
                         
                     except:
                         context_items = fallback_search(query_embedding)
+                        search_method = "fallback"
                     
                     context = "\n".join([item['content'] for item in context_items])
                     
@@ -527,13 +530,13 @@ Relevant Memories:
 
 Please provide a helpful answer based on the user's question and the relevant memories above."""
                         
-                        found_memories_text = f" (Found {len(context_items)} relevant memories)"
+                        found_memories_text = f" (Found {len(context_items)} relevant memories using {search_method})"
                     else:
                         prompt = f"""You are a helpful AI assistant. The user asked: {user_input}
 
 No relevant memories were found in the database. Please provide a helpful general response and suggest they might want to add relevant information to their memory first."""
                         
-                        found_memories_text = f" (No relevant memories found)"
+                        found_memories_text = f" (No relevant memories found using {search_method})"
                     
                     chat_response = openai_client.chat.completions.create(
                         model="gpt-4o-mini",
@@ -564,10 +567,48 @@ No relevant memories were found in the database. Please provide a helpful genera
     
     st.rerun()
 
-# ✅ Simple clear button (only show if there's chat history)
+# ✅ Simple clear button and debug option
 if st.session_state.chat_history:
-    col1, col2, col3 = st.columns([2, 1, 2])
-    with col2:
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
         if st.button("🗑️ Clear Chat", use_container_width=True, key="clear_chat"):
             st.session_state.chat_history = []
             st.rerun()
+    with col2:
+        if st.button("🔍 Debug Memories", use_container_width=True, key="debug_memories"):
+            try:
+                # Get all memories to debug
+                all_memories = supabase.table("project_memory").select("id, content").execute()
+                debug_text = "**All stored memories:**\n"
+                for mem in all_memories.data:
+                    debug_text += f"- {mem['content'][:100]}...\n"
+                
+                st.session_state.chat_history.append(
+                    f'<div class="chat-message-wrapper"><div class="system-message">{debug_text}</div></div>'
+                )
+                st.rerun()
+            except Exception as e:
+                st.session_state.chat_history.append(
+                    f'<div class="chat-message-wrapper"><div class="system-message">Debug error: {str(e)}</div></div>'
+                )
+                st.rerun()
+else:
+    # Show debug option even when no chat history
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("🔍 Debug Memories", use_container_width=True, key="debug_memories_empty"):
+            try:
+                all_memories = supabase.table("project_memory").select("id, content").execute()
+                debug_text = "**All stored memories:**\n"
+                for mem in all_memories.data:
+                    debug_text += f"- {mem['content'][:100]}...\n"
+                
+                st.session_state.chat_history.append(
+                    f'<div class="chat-message-wrapper"><div class="system-message">{debug_text}</div></div>'
+                )
+                st.rerun()
+            except Exception as e:
+                st.session_state.chat_history.append(
+                    f'<div class="chat-message-wrapper"><div class="system-message">Debug error: {str(e)}</div></div>'
+                )
+                st.rerun()
