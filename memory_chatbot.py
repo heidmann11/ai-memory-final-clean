@@ -60,7 +60,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ✅ Enhanced UI Styling (same as before but optimized)
+# ✅ Enhanced UI Styling
 st.markdown("""
     <style>
         .stApp {
@@ -76,10 +76,6 @@ st.markdown("""
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
-        
-        .logo-container {
-            display: none; /* We'll integrate logo into banner */
-        }
         
         .banner {
             text-align: center;
@@ -141,25 +137,68 @@ st.markdown("""
         
         .banner h1 {
             margin: 0;
-            font-size: 1.8rem;
+            font-size: 2.8rem;
             font-weight: 700;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
         
         .banner p {
             margin: 0;
-            font-size: 1rem;
-            opacity: 0.9;
+            font-size: 1.3rem;
+            opacity: 0.95;
+        }
+        
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 8px 0 8px 0;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 6px 12px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-number {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 1px;
+        }
+        
+        .input-section-top {
+            max-width: 800px;
+            margin: 15px auto 20px auto;
+            padding: 0 20px;
+        }
+        
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto;
         }
         
         .chat-container {
             max-width: 800px;
-            margin: 5px auto 10px auto;
-            padding: 10px;
-            min-height: 120px;
-            max-height: 250px;
+            margin: 20px auto 15px auto;
+            padding: 8px;
+            min-height: 100px;
+            max-height: 400px;
             overflow-y: auto;
             scroll-behavior: smooth;
+        }
+        
+        .main .block-container {
+            padding-bottom: 20px;
         }
         
         .chat-message-wrapper {
@@ -202,106 +241,77 @@ st.markdown("""
             box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
         }
         
-        .empty-state {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-            padding: 20px 15px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 15px;
-            margin: 5px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .empty-state h3 {
-            margin: 0 0 8px 0;
-            font-size: 1.2rem;
-        }
-        
-        .empty-state p {
-            margin: 0;
-            font-size: 0.9rem;
-        }
-        
-        .input-section {
-            max-width: 800px;
-            margin: 5px auto;
-            padding: 0 20px;
-        }
-        
-        .stForm {
-            border: none;
-            background: transparent;
-        }
-        
         .stForm > div {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.98);
             border-radius: 20px;
-            padding: 8px 15px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.3);
+            padding: 12px 18px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.15);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.4);
         }
         
-        .stButton > button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 20px;
-            padding: 12px 25px;
-            font-size: 16px;
-            font-weight: 600;
+        .stTextInput > div > div > textarea {
+            border-radius: 18px;
+            border: 2px solid transparent;
+            padding: 15px 20px;
+            font-size: 15px;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            width: 100%;
-        }
-        
-        .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: rgba(255, 255, 255, 0.8);
+            min-height: 80px !important;
+            resize: vertical;
         }
         
         .stTextInput > div > div > input {
-            border-radius: 20px;
+            border-radius: 18px;
             border: 2px solid transparent;
-            padding: 12px 20px;
-            font-size: 16px;
+            padding: 15px 20px;
+            font-size: 15px;
             transition: all 0.3s ease;
             background: rgba(255, 255, 255, 0.8);
+            min-height: 60px;
         }
         
+        .stTextInput > div > div > textarea:focus,
         .stTextInput > div > div > input:focus {
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
             background: rgba(255, 255, 255, 1);
         }
         
-        .stats-container {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin: 5px 0 10px 0;
+        .stButton > button,
+        button,
+        .stFormSubmitButton > button,
+        [data-testid="stFormSubmitButton"] button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            background-color: #667eea !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 18px !important;
+            padding: 15px 25px !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+            width: 100% !important;
+            min-height: 50px !important;
         }
         
-        .stat-card {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px 15px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
+        .stButton > button:hover,
+        button:hover,
+        .stFormSubmitButton > button:hover,
+        [data-testid="stFormSubmitButton"] button:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b5b95 100%) !important;
+            background-color: #5a67d8 !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4) !important;
         }
         
-        .stat-number {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 2px;
+        button[kind="primary"],
+        button[kind="secondary"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            background-color: #667eea !important;
+            color: white !important;
+            border: none !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -399,11 +409,11 @@ try:
 except Exception:
     pass
 
-# ✅ Input Section - Put RIGHT after stats for always visible
+# ✅ SINGLE Input Section - ONLY ONE IN ENTIRE APP
 st.markdown('<div class="input-section-top">', unsafe_allow_html=True)
 st.markdown('<div class="input-container">', unsafe_allow_html=True)
 
-with st.form(key="main_chat_form", clear_on_submit=True):  # Changed key to be unique
+with st.form(key="main_chat_form", clear_on_submit=True):
     col1, col2 = st.columns([4, 1])
     
     with col1:
@@ -426,34 +436,10 @@ st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 if st.session_state.chat_history:
     for msg in st.session_state.chat_history[-10:]:
         st.markdown(msg, unsafe_allow_html=True)
-# No welcome message - cleaner interface
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ✅ Input Section - Put at TOP after stats for always visible
-st.markdown('<div class="input-section-top">', unsafe_allow_html=True)
-st.markdown('<div class="input-container">', unsafe_allow_html=True)
-
-with st.form(key="chat_form", clear_on_submit=True):
-    col1, col2 = st.columns([4, 1])
-    
-    with col1:
-        user_input = st.text_area(
-            "Message", 
-            key="user_input_form", 
-            label_visibility="collapsed",
-            placeholder="Type 'add: your note' to store memory, or ask a question... (Press Enter to send)",
-            height=80
-        )
-    
-    with col2:
-        # Remove type="primary" to avoid red button
-        submit_btn = st.form_submit_button("💜 Send", use_container_width=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ✅ Process Input with production error handling
-if submit_btn and user_input.strip():
+# ✅ Process Input with better error handling
+if submit_btn and user_input and user_input.strip():
     st.session_state.chat_history.append(
         f'<div class="chat-message-wrapper"><div class="user-message"><strong>You:</strong> {user_input}</div></div>'
     )
