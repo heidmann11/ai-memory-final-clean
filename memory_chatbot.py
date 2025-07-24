@@ -182,24 +182,24 @@ st.markdown("""
         }
         
         .ai-message {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 15px 20px;
             border-radius: 20px 20px 20px 5px;
             margin: 10px 0;
             margin-right: 50px;
-            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
         .system-message {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
             color: white;
             padding: 12px 18px;
             border-radius: 15px;
             margin: 8px auto;
             text-align: center;
             max-width: 300px;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
         }
         
         .empty-state {
@@ -414,8 +414,9 @@ else:
     """, unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ✅ Input Section with Enter key support
+# ✅ Sticky Input Section (like ChatGPT)
 st.markdown('<div class="input-section">', unsafe_allow_html=True)
+st.markdown('<div class="input-container">', unsafe_allow_html=True)
 
 with st.form(key="chat_form", clear_on_submit=True):
     col1, col2 = st.columns([4, 1])
@@ -430,8 +431,10 @@ with st.form(key="chat_form", clear_on_submit=True):
         )
     
     with col2:
-        submit_btn = st.form_submit_button("💜 Send", type="primary", use_container_width=True)
+        # Remove type="primary" to avoid red button
+        submit_btn = st.form_submit_button("💜 Send", use_container_width=True)
 
+st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ✅ Process Input with production error handling
@@ -552,6 +555,6 @@ No relevant memories were found in the database. Please provide a helpful genera
 if st.session_state.chat_history:
     col1, col2, col3 = st.columns([2, 1, 2])
     with col2:
-        if st.button("🗑️ Clear Chat", use_container_width=True):
+        if st.button("🗑️ Clear Chat", use_container_width=True, key="clear_chat"):
             st.session_state.chat_history = []
             st.rerun()
