@@ -399,6 +399,29 @@ try:
 except Exception:
     pass
 
+# ✅ Input Section - Put RIGHT after stats for always visible
+st.markdown('<div class="input-section-top">', unsafe_allow_html=True)
+st.markdown('<div class="input-container">', unsafe_allow_html=True)
+
+with st.form(key="chat_form", clear_on_submit=True):
+    col1, col2 = st.columns([4, 1])
+    
+    with col1:
+        user_input = st.text_area(
+            "Message", 
+            key="user_input_form", 
+            label_visibility="collapsed",
+            placeholder="Type 'add: your note' to store memory, or ask a question... (Press Enter to send)",
+            height=80
+        )
+    
+    with col2:
+        # Remove type="primary" to avoid red button
+        submit_btn = st.form_submit_button("💜 Send", use_container_width=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
 # ✅ Chat Display
 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 if st.session_state.chat_history:
@@ -407,8 +430,8 @@ if st.session_state.chat_history:
 # No welcome message - cleaner interface
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ✅ Sticky Input Section (like ChatGPT)
-st.markdown('<div class="input-section">', unsafe_allow_html=True)
+# ✅ Input Section - Put at TOP after stats for always visible
+st.markdown('<div class="input-section-top">', unsafe_allow_html=True)
 st.markdown('<div class="input-container">', unsafe_allow_html=True)
 
 with st.form(key="chat_form", clear_on_submit=True):
@@ -439,15 +462,26 @@ if submit_btn and user_input.strip():
     with st.spinner('🤔 Thinking...'):
         try:
             if user_input.lower().startswith("add:"):
+                # ✅ Store Note in Supabase with better error handling
                 content = user_input[4:].strip()
                 
                 if content:
                     try:
+                        # Step 1: Create embedding
+                        st.session_state.chat_history.append(
+                            f'<div class="chat-message-wrapper"><div class="system-message">🔄 Creating memory embedding...</div></div>'
+                        )
+                        
                         embedding_response = openai_client.embeddings.create(
                             model="text-embedding-3-small",
                             input=content
                         )
                         embedding = embedding_response.data[0].embedding
+                        
+                        # Step 2: Save to Supabase
+                        st.session_state.chat_history.append(
+                            f'<div class="chat-message-wrapper"><div class="system-message">💾 Saving to database...</div></div>'
+                        )
                         
                         result = supabase.table("project_memory").insert({
                             "content": content,
@@ -455,18 +489,19 @@ if submit_btn and user_input.strip():
                             "created_at": datetime.utcnow().isoformat()
                         }).execute()
                         
-                        if result.data:
-                            response_text = f"✅ Memory added successfully!"
+                        if result.data and len(result.data) > 0:
                             st.session_state.chat_history.append(
-                                f'<div class="chat-message-wrapper"><div class="system-message">{response_text}</div></div>'
+                                f'<div class="chat-message-wrapper"><div class="system-message">✅ Memory saved successfully: "{content[:50]}{"..." if len(content) > 50 else ""}"</div></div>'
                             )
                         else:
                             st.session_state.chat_history.append(
-                                f'<div class="chat-message-wrapper"><div class="system-message">❌ Failed to store memory</div></div>'
+                                f'<div class="chat-message-wrapper"><div class="system-message">❌ Database insert failed - no data returned</div></div>'
                             )
-                    except Exception:
+                            
+                    except Exception as embed_error:
+                        error_details = str(embed_error)[:100]
                         st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Error creating embedding</div></div>'
+                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Error saving memory: {error_details}</div></div>'
                         )
                 else:
                     st.session_state.chat_history.append(
