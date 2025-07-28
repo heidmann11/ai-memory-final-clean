@@ -10,7 +10,7 @@ import numpy as np
 import hashlib
 
 # ✅ Load environment variables
-load_dotenv()  # Changed from .env.local to work with Railway
+load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -19,7 +19,7 @@ STREAMLIT_PASSWORD = os.getenv("STREAMLIT_PASSWORD", "")
 # ✅ Simple password protection (optional)
 def check_password():
     if not STREAMLIT_PASSWORD:
-        return True  # No password required
+        return True
     
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -60,258 +60,274 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ✅ Enhanced UI Styling
+# ✅ ChatGPT-Style CSS
 st.markdown("""
     <style>
-        .stApp {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-        }
-        
-        .main > div {
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-        }
-        
+        /* Hide Streamlit elements */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
+        .stDeployButton {display: none;}
         
-        .banner {
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 40px;
-            border-radius: 0;
-            margin: 0;
-            width: 100vw;
-            margin-left: calc(-50vw + 50%);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 30px;
+        /* Main app styling */
+        .stApp {
+            background-color: #ffffff;
+            color: #333333;
         }
         
-        .banner-content {
-            text-align: center;
+        /* Remove default padding */
+        .main .block-container {
+            padding-top: 2rem;
+            padding-bottom: 8rem;
+            max-width: 100%;
         }
         
-        .logo-in-banner {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            flex-shrink: 0;
-            border: 3px solid rgba(255,255,255,0.3);
-        }
-        
-        .logo-fallback {
-            background: rgba(255,255,255,0.15);
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-right: 30px;
-            border: 3px solid rgba(255,255,255,0.3);
-        }
-        
-        .brand-icon {
-            font-size: 3.5rem;
-            margin-bottom: 5px;
-        }
-        
-        .brand-text {
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            font-family: 'Arial', sans-serif;
-        }
-        
-        .banner h1 {
-            margin: 0;
-            font-size: 2.8rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        .banner p {
-            margin: 0;
-            font-size: 1.3rem;
-            opacity: 0.95;
-        }
-        
-        .stats-container {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin: 8px 0 8px 0;
-        }
-        
-        .stat-card {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 6px 12px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        /* Header styling - minimal and clean */
+        .header-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e5e5;
+            padding: 12px 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .stat-number {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #667eea;
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
         }
         
-        .stat-label {
-            font-size: 0.75rem;
-            color: #666;
-            margin-top: 1px;
-        }
-        
-        .input-section-top {
-            max-width: 800px;
-            margin: 15px auto 20px auto;
-            padding: 0 20px;
-        }
-        
-        .input-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
+        /* Chat container */
         .chat-container {
             max-width: 800px;
-            margin: 20px auto 15px auto;
-            padding: 8px;
-            min-height: 100px;
-            max-height: 400px;
-            overflow-y: auto;
-            scroll-behavior: smooth;
+            margin: 60px auto 0 auto;
+            padding: 20px;
+            min-height: calc(100vh - 200px);
         }
         
-        .main .block-container {
-            padding-bottom: 20px;
-        }
-        
-        .chat-message-wrapper {
-            animation: fadeIn 0.3s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Message styling */
+        .message {
+            margin: 20px 0;
+            display: flex;
+            width: 100%;
         }
         
         .user-message {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 20px 20px 5px 20px;
-            margin: 10px 0;
-            margin-left: 50px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            justify-content: flex-end;
         }
         
         .ai-message {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 20px 20px 20px 5px;
-            margin: 10px 0;
-            margin-right: 50px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            justify-content: flex-start;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+        
+        .user-message .message-content {
+            background-color: #f0f0f0;
+            color: #333;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .ai-message .message-content {
+            background-color: #000000;
+            color: #ffffff;
+            border-bottom-left-radius: 4px;
         }
         
         .system-message {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-            color: white;
-            padding: 12px 18px;
-            border-radius: 15px;
-            margin: 8px auto;
             text-align: center;
-            max-width: 300px;
-            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+            margin: 15px 0;
         }
         
-        .stForm > div {
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 20px;
-            padding: 12px 18px;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.15);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255,255,255,0.4);
+        .system-message .message-content {
+            background-color: #f8f8f8;
+            color: #666;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 14px;
+            max-width: 400px;
+            margin: 0 auto;
         }
         
-        .stTextInput > div > div > textarea {
-            border-radius: 18px;
-            border: 2px solid transparent;
-            padding: 15px 20px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
-            min-height: 80px !important;
-            resize: vertical;
+        /* Fixed bottom input */
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #e5e5e5;
+            padding: 20px;
+            z-index: 1000;
         }
         
-        .stTextInput > div > div > input {
-            border-radius: 18px;
-            border: 2px solid transparent;
-            padding: 15px 20px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
-            min-height: 60px;
+        .input-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
         }
         
-        .stTextInput > div > div > textarea:focus,
-        .stTextInput > div > div > input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            background: rgba(255, 255, 255, 1);
+        /* Input field styling */
+        .stTextArea > div > div > textarea {
+            border: 2px solid #e5e5e5 !important;
+            border-radius: 20px !important;
+            padding: 12px 16px !important;
+            font-size: 15px !important;
+            resize: none !important;
+            max-height: 120px !important;
+            min-height: 44px !important;
+            background-color: #ffffff !important;
+            color: #333 !important;
+            box-shadow: none !important;
         }
         
-        .stButton > button,
-        button,
-        .stFormSubmitButton > button,
-        [data-testid="stFormSubmitButton"] button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            background-color: #667eea !important;
+        .stTextArea > div > div > textarea:focus {
+            border-color: #333 !important;
+            box-shadow: 0 0 0 1px #333 !important;
+        }
+        
+        /* Send button styling */
+        .stButton > button {
+            background-color: #000000 !important;
             color: white !important;
             border: none !important;
-            border-radius: 18px !important;
-            padding: 15px 25px !important;
-            font-size: 16px !important;
+            border-radius: 20px !important;
+            padding: 10px 20px !important;
+            font-size: 14px !important;
             font-weight: 600 !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
-            width: 100% !important;
-            min-height: 50px !important;
+            height: 44px !important;
+            min-width: 80px !important;
+            transition: all 0.2s ease !important;
         }
         
-        .stButton > button:hover,
-        button:hover,
-        .stFormSubmitButton > button:hover,
-        [data-testid="stFormSubmitButton"] button:hover {
-            background: linear-gradient(135deg, #5a67d8 0%, #6b5b95 100%) !important;
-            background-color: #5a67d8 !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4) !important;
+        .stButton > button:hover {
+            background-color: #333333 !important;
+            transform: none !important;
         }
         
-        button[kind="primary"],
-        button[kind="secondary"] {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            background-color: #667eea !important;
-            color: white !important;
-            border: none !important;
+        .stButton > button:active {
+            background-color: #555555 !important;
+        }
+        
+        /* Clear button styling */
+        .clear-button {
+            background-color: transparent !important;
+            color: #666 !important;
+            border: 1px solid #e5e5e5 !important;
+            border-radius: 16px !important;
+            padding: 8px 16px !important;
+            font-size: 14px !important;
+            margin: 20px auto !important;
+            display: block !important;
+        }
+        
+        .clear-button:hover {
+            background-color: #f8f8f8 !important;
+            color: #333 !important;
+        }
+        
+        /* Welcome message */
+        .welcome-container {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            margin-bottom: 30px;
+            color: #666;
+        }
+        
+        .tip-card {
+            background-color: #f8f8f8;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px auto;
+            max-width: 400px;
+            text-align: left;
+        }
+        
+        .tip-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .tip-description {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* Stats */
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 12px 20px;
+            background-color: #f8f8f8;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+        }
+        
+        .stat-number {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -333,7 +349,6 @@ def fallback_search(query_embedding, threshold=0.05, limit=5):
         for item in result.data:
             if item['embedding']:
                 similarity = cosine_similarity(query_embedding, item['embedding'])
-                # Much lower threshold for better recall
                 if similarity > threshold:
                     matches.append({
                         'id': item['id'],
@@ -351,104 +366,101 @@ def fallback_search(query_embedding, threshold=0.05, limit=5):
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# ✅ Integrated Logo + Banner Header
-logo_paths = [
-    "corval_logo.png",  # Root directory
-    "static/corval_logo.png",  # Static folder
-    "app/static/corval_logo.png",  # App/static folder
-    "assets/corval_logo.png"  # Assets folder
-]
-
-logo_found = False
-logo_element = ""
-
-for logo_path in logo_paths:
-    if os.path.exists(logo_path):
-        # Convert image to base64 for inline embedding
-        with open(logo_path, "rb") as img_file:
-            b64_string = base64.b64encode(img_file.read()).decode()
-        logo_element = f'<div class="logo-in-banner"><img src="data:image/png;base64,{b64_string}" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover;"></div>'
-        logo_found = True
-        break
-
-if not logo_found:
-    logo_element = '''
-    <div class="logo-fallback">
-        <div class="brand-icon">🧠</div>
-        <div class="brand-text">AI</div>
-    </div>
-    '''
-
-# Unified header with logo + banner
-st.markdown(f"""
-<div class="banner">
-    {logo_element}
-    <div class="banner-content">
-        <h1>Corval.ai Memory Assistant</h1>
-        <p>Your intelligent knowledge companion that never forgets.</p>
-    </div>
+# ✅ Fixed Header
+st.markdown('''
+<div class="header-container">
+    <h1 class="header-title">🧠 Corval.ai Memory Assistant</h1>
 </div>
-""", unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
-# ✅ Stats with error handling
-try:
-    count_result = supabase.table("project_memory").select("id", count="exact").execute()
-    memory_count = count_result.count if count_result.count else 0
-    
-    st.markdown(f"""
-    <div class="stats-container">
-        <div class="stat-card">
-            <div class="stat-number">{memory_count}</div>
-            <div class="stat-label">Memories Stored</div>
+# ✅ Chat Container
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+# Show welcome message if no chat history
+if not st.session_state.chat_history:
+    # Stats
+    try:
+        count_result = supabase.table("project_memory").select("id", count="exact").execute()
+        memory_count = count_result.count if count_result.count else 0
+        
+        st.markdown(f'''
+        <div class="stats-container">
+            <div class="stat-item">
+                <div class="stat-number">{memory_count}</div>
+                <div class="stat-label">Memories Stored</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{len(st.session_state.chat_history)}</div>
+                <div class="stat-label">Messages Today</div>
+            </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-number">{len(st.session_state.chat_history)}</div>
-            <div class="stat-label">Messages Today</div>
+        ''', unsafe_allow_html=True)
+    except Exception:
+        pass
+    
+    st.markdown('''
+    <div class="welcome-container">
+        <div class="welcome-title">Welcome to your Memory Assistant</div>
+        <div class="welcome-subtitle">Your intelligent knowledge companion that never forgets</div>
+        
+        <div class="tip-card">
+            <div class="tip-title">💾 Save Information</div>
+            <div class="tip-description">Type "add: your information here" to store memories</div>
+        </div>
+        
+        <div class="tip-card">
+            <div class="tip-title">💬 Ask Questions</div>
+            <div class="tip-description">Just type your question normally to search your memories</div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
-except Exception:
-    pass
+    ''', unsafe_allow_html=True)
 
-# ✅ SINGLE Input Section - ONLY ONE IN ENTIRE APP
-st.markdown('<div class="input-section-top">', unsafe_allow_html=True)
-st.markdown('<div class="input-container">', unsafe_allow_html=True)
+# Display chat messages
+for msg in st.session_state.chat_history:
+    st.markdown(msg, unsafe_allow_html=True)
 
-with st.form(key="main_chat_form", clear_on_submit=True):
-    col1, col2 = st.columns([4, 1])
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ✅ Fixed Bottom Input
+st.markdown('''
+<div class="input-container">
+    <div class="input-wrapper">
+''', unsafe_allow_html=True)
+
+# Input form
+with st.form(key="chat_form", clear_on_submit=True):
+    col1, col2 = st.columns([5, 1])
     
     with col1:
         user_input = st.text_area(
-            "Message", 
-            key="main_user_input", 
+            "Message",
+            key="user_input", 
             label_visibility="collapsed",
-            placeholder="💡 Type 'add: your note' to save information, or ask me any question...",
-            height=80
+            placeholder="Type 'add: your note' to save info, or ask me anything...",
+            height=44
         )
     
     with col2:
-        submit_btn = st.form_submit_button("💜 Send", use_container_width=True)
+        submit_btn = st.form_submit_button("Send")
 
-st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('''
+    </div>
+</div>
+''', unsafe_allow_html=True)
 
-# ✅ Chat Display
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-if st.session_state.chat_history:
-    for msg in st.session_state.chat_history[-10:]:
-        st.markdown(msg, unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ✅ Process Input - Clean Production Version
+# ✅ Process Input
 if submit_btn and user_input and user_input.strip():
+    # Add user message
     st.session_state.chat_history.append(
-        f'<div class="chat-message-wrapper"><div class="user-message"><strong>You:</strong> {user_input}</div></div>'
+        f'''<div class="message user-message">
+            <div class="message-content">{user_input}</div>
+        </div>'''
     )
     
-    with st.spinner('🤔 Thinking...'):
+    with st.spinner('Thinking...'):
         try:
             if user_input.lower().startswith("add:"):
-                # ✅ Store Note in Supabase
+                # Store Note
                 content = user_input[4:].strip()
                 
                 if content:
@@ -469,23 +481,31 @@ if submit_btn and user_input and user_input.strip():
                         
                         if result.data and len(result.data) > 0:
                             st.session_state.chat_history.append(
-                                f'<div class="chat-message-wrapper"><div class="system-message">✅ Memory saved: "{content[:60]}{"..." if len(content) > 60 else ""}"</div></div>'
+                                f'''<div class="message system-message">
+                                    <div class="message-content">✅ Memory saved: "{content[:50]}{"..." if len(content) > 50 else ""}"</div>
+                                </div>'''
                             )
                         else:
                             st.session_state.chat_history.append(
-                                f'<div class="chat-message-wrapper"><div class="system-message">❌ Failed to save memory - please try again</div></div>'
+                                f'''<div class="message system-message">
+                                    <div class="message-content">❌ Failed to save memory</div>
+                                </div>'''
                             )
                             
                     except Exception as embed_error:
                         st.session_state.chat_history.append(
-                            f'<div class="chat-message-wrapper"><div class="system-message">❌ Error saving memory: {str(embed_error)[:100]}...</div></div>'
+                            f'''<div class="message system-message">
+                                <div class="message-content">❌ Error: {str(embed_error)[:60]}...</div>
+                            </div>'''
                         )
                 else:
                     st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">❌ Please provide content after "add:" (example: add: your note here)</div></div>'
+                        f'''<div class="message system-message">
+                            <div class="message-content">❌ Please provide content after "add:"</div>
+                        </div>'''
                     )
             else:
-                # ✅ Query Mode (clean version)
+                # Query Mode
                 try:
                     # Create query embedding
                     query_embedding_response = openai_client.embeddings.create(
@@ -496,7 +516,7 @@ if submit_btn and user_input and user_input.strip():
                     
                     context_items = []
                     
-                    # Try RPC function first, fallback silently
+                    # Search memories
                     try:
                         context_result = supabase.rpc("match_project_memory", {
                             "query_embedding": query_embedding,
@@ -505,11 +525,9 @@ if submit_btn and user_input and user_input.strip():
                         }).execute()
                         
                         context_items = context_result.data if context_result.data else []
-                        search_method = "RPC"
                         
-                    except Exception as rpc_error:
+                    except Exception:
                         context_items = fallback_search(query_embedding)
-                        search_method = "fallback"
                     
                     context = "\n".join([item['content'] for item in context_items])
                     
@@ -523,19 +541,15 @@ Relevant Memories:
 {context}
 
 Please provide a helpful answer based on the user's question and the relevant memories above."""
-                        
-                        found_memories_text = f" (Found {len(context_items)} relevant memories)"
                     else:
                         prompt = f"""You are a helpful AI assistant. The user asked: {user_input}
 
-No relevant memories were found in the database. Please provide a helpful general response to their question."""
-                        
-                        found_memories_text = f" (No relevant memories found)"
+No relevant memories were found. Please provide a helpful general response."""
                     
                     chat_response = openai_client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[
-                            {"role": "system", "content": "You are a helpful AI assistant that helps users with their questions and manages their stored memories."},
+                            {"role": "system", "content": "You are a helpful AI assistant."},
                             {"role": "user", "content": prompt}
                         ],
                         max_tokens=500,
@@ -544,40 +558,33 @@ No relevant memories were found in the database. Please provide a helpful genera
                     
                     response_text = chat_response.choices[0].message.content
                     
-                    # Only show memory info if memories were found
                     if context_items:
-                        response_text += f"\n\n💡 *Found {len(context_items)} relevant memories*"
+                        response_text += f"\n\n*Found {len(context_items)} relevant memories*"
                     
                     st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="ai-message"><strong>🤖 AI:</strong> {response_text}</div></div>'
+                        f'''<div class="message ai-message">
+                            <div class="message-content">{response_text}</div>
+                        </div>'''
                     )
                     
                 except Exception as query_error:
                     st.session_state.chat_history.append(
-                        f'<div class="chat-message-wrapper"><div class="system-message">❌ Query failed: {str(query_error)[:100]}</div></div>'
+                        f'''<div class="message system-message">
+                            <div class="message-content">❌ Query failed: {str(query_error)[:60]}...</div>
+                        </div>'''
                     )
         
         except Exception:
             st.session_state.chat_history.append(
-                f'<div class="chat-message-wrapper"><div class="system-message">❌ Something went wrong</div></div>'
+                f'''<div class="message system-message">
+                    <div class="message-content">❌ Something went wrong</div>
+                </div>'''
             )
     
     st.rerun()
 
-# ✅ Simple clean buttons
+# Clear chat button (only show if there's chat history)
 if st.session_state.chat_history:
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("🗑️ Clear Chat", use_container_width=True, key="clear_chat"):
-            st.session_state.chat_history = []
-            st.rerun()
-else:
-    # Show helpful tips when no chat history
-    st.markdown("""
-    <div style="text-align: center; color: #666; font-style: italic; padding: 20px;">
-        <h4>💡 How to use your Memory Assistant:</h4>
-        <p><strong>To save memories:</strong> Type "add: your information here"</p>
-        <p><strong>To ask questions:</strong> Just type your question normally</p>
-        <p>Your memories are stored permanently and the AI will use them to answer your questions!</p>
-    </div>
-    """, unsafe_allow_html=True)
+    if st.button("🗑️ Clear Chat", key="clear_chat"):
+        st.session_state.chat_history = []
+        st.rerun()
