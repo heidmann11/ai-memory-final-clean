@@ -60,7 +60,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ✅ ChatGPT-Style CSS
+# ✅ Enhanced CSS - Purple theme with sticky bottom input
 st.markdown("""
     <style>
         /* Hide Streamlit elements */
@@ -71,53 +71,125 @@ st.markdown("""
         
         /* Main app styling */
         .stApp {
-            background-color: #ffffff;
-            color: #333333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
         }
         
-        /* Remove default padding */
+        /* Remove default padding and add space for fixed input */
         .main .block-container {
-            padding-top: 2rem;
-            padding-bottom: 8rem;
+            padding-top: 1rem;
+            padding-bottom: 120px;
             max-width: 100%;
         }
         
-        /* Header styling - minimal and clean */
-        .header-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid #e5e5e5;
-            padding: 12px 20px;
-            z-index: 1000;
+        /* Logo and Header */
+        .header-banner {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 0;
+            margin: 0 0 20px 0;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 25px;
+        }
+        
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255,255,255,0.3);
+            flex-shrink: 0;
+        }
+        
+        .logo-fallback {
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
         
-        .header-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
+        .brand-icon {
+            font-size: 2rem;
+            margin-bottom: 2px;
+        }
+        
+        .brand-text {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .header-content h1 {
             margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .header-content p {
+            margin: 0;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        /* Stats */
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0 25px 0;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 16px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 2px;
         }
         
         /* Chat container */
         .chat-container {
             max-width: 800px;
-            margin: 60px auto 0 auto;
-            padding: 20px;
-            min-height: calc(100vh - 200px);
+            margin: 0 auto;
+            padding: 0 20px;
+            min-height: 60vh;
         }
         
         /* Message styling */
         .message {
-            margin: 20px 0;
+            margin: 15px 0;
             display: flex;
             width: 100%;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .user-message {
@@ -128,52 +200,93 @@ st.markdown("""
             justify-content: flex-start;
         }
         
+        .system-message {
+            justify-content: center;
+        }
+        
         .message-content {
-            max-width: 70%;
-            padding: 12px 16px;
+            max-width: 75%;
+            padding: 12px 18px;
             border-radius: 18px;
             font-size: 15px;
             line-height: 1.4;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .user-message .message-content {
-            background-color: #f0f0f0;
-            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             border-bottom-right-radius: 4px;
         }
         
         .ai-message .message-content {
-            background-color: #000000;
-            color: #ffffff;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            border: 1px solid rgba(102, 126, 234, 0.2);
             border-bottom-left-radius: 4px;
         }
         
-        .system-message {
-            text-align: center;
-            margin: 15px 0;
-        }
-        
         .system-message .message-content {
-            background-color: #f8f8f8;
-            color: #666;
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
             font-size: 14px;
             max-width: 400px;
-            margin: 0 auto;
+            text-align: center;
         }
         
-        /* Fixed bottom input */
+        /* Welcome screen */
+        .welcome-container {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            margin-bottom: 25px;
+            color: #666;
+        }
+        
+        .tip-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px auto;
+            max-width: 350px;
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .tip-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 6px;
+        }
+        
+        .tip-description {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* Fixed bottom input container */
         .input-container {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid #e5e5e5;
-            padding: 20px;
+            backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(102, 126, 234, 0.2);
+            padding: 15px 20px;
             z-index: 1000;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
         }
         
         .input-wrapper {
@@ -186,130 +299,66 @@ st.markdown("""
         
         /* Input field styling */
         .stTextArea > div > div > textarea {
-            border: 2px solid #e5e5e5 !important;
+            border: 2px solid rgba(102, 126, 234, 0.3) !important;
             border-radius: 20px !important;
-            padding: 12px 16px !important;
+            padding: 12px 18px !important;
             font-size: 15px !important;
             resize: none !important;
             max-height: 120px !important;
-            min-height: 44px !important;
-            background-color: #ffffff !important;
+            min-height: 48px !important;
+            background: rgba(255, 255, 255, 0.9) !important;
             color: #333 !important;
-            box-shadow: none !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+            transition: all 0.3s ease !important;
         }
         
         .stTextArea > div > div > textarea:focus {
-            border-color: #333 !important;
-            box-shadow: 0 0 0 1px #333 !important;
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+            background: rgba(255, 255, 255, 1) !important;
         }
         
         /* Send button styling */
-        .stButton > button {
-            background-color: #000000 !important;
+        .stButton > button,
+        .stFormSubmitButton > button,
+        [data-testid="stFormSubmitButton"] button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             color: white !important;
             border: none !important;
             border-radius: 20px !important;
-            padding: 10px 20px !important;
-            font-size: 14px !important;
+            padding: 12px 24px !important;
+            font-size: 15px !important;
             font-weight: 600 !important;
-            height: 44px !important;
-            min-width: 80px !important;
-            transition: all 0.2s ease !important;
+            height: 48px !important;
+            min-width: 90px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
         }
         
-        .stButton > button:hover {
-            background-color: #333333 !important;
-            transform: none !important;
-        }
-        
-        .stButton > button:active {
-            background-color: #555555 !important;
+        .stButton > button:hover,
+        .stFormSubmitButton > button:hover,
+        [data-testid="stFormSubmitButton"] button:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b5b95 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
         }
         
         /* Clear button styling */
         .clear-button {
-            background-color: transparent !important;
-            color: #666 !important;
-            border: 1px solid #e5e5e5 !important;
+            background: transparent !important;
+            color: #667eea !important;
+            border: 2px solid rgba(102, 126, 234, 0.3) !important;
             border-radius: 16px !important;
-            padding: 8px 16px !important;
+            padding: 8px 20px !important;
             font-size: 14px !important;
             margin: 20px auto !important;
             display: block !important;
+            transition: all 0.3s ease !important;
         }
         
         .clear-button:hover {
-            background-color: #f8f8f8 !important;
-            color: #333 !important;
-        }
-        
-        /* Welcome message */
-        .welcome-container {
-            text-align: center;
-            padding: 40px 20px;
-            color: #666;
-        }
-        
-        .welcome-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 12px;
-        }
-        
-        .welcome-subtitle {
-            font-size: 16px;
-            margin-bottom: 30px;
-            color: #666;
-        }
-        
-        .tip-card {
-            background-color: #f8f8f8;
-            border: 1px solid #e5e5e5;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 12px auto;
-            max-width: 400px;
-            text-align: left;
-        }
-        
-        .tip-title {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-        }
-        
-        .tip-description {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        /* Stats */
-        .stats-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin: 20px 0;
-        }
-        
-        .stat-item {
-            text-align: center;
-            padding: 12px 20px;
-            background-color: #f8f8f8;
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-        }
-        
-        .stat-number {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            color: #666;
-            margin-top: 2px;
+            background: rgba(102, 126, 234, 0.1) !important;
+            border-color: #667eea !important;
         }
         
         /* Scrollbar styling */
@@ -318,16 +367,16 @@ st.markdown("""
         }
         
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: rgba(245, 247, 250, 0.5);
         }
         
         ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
+            background: rgba(102, 126, 234, 0.3);
             border-radius: 3px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a1;
+            background: rgba(102, 126, 234, 0.5);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -366,42 +415,75 @@ def fallback_search(query_embedding, threshold=0.05, limit=5):
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# ✅ Fixed Header
-st.markdown('''
-<div class="header-container">
-    <h1 class="header-title">🧠 Corval.ai Memory Assistant</h1>
+# ✅ Logo Detection and Header
+logo_paths = [
+    "corval_logo.png",
+    "static/corval_logo.png", 
+    "app/static/corval_logo.png",
+    "assets/corval_logo.png"
+]
+
+logo_found = False
+logo_element = ""
+
+for logo_path in logo_paths:
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as img_file:
+            b64_string = base64.b64encode(img_file.read()).decode()
+        logo_element = f'<img src="data:image/png;base64,{b64_string}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover;">'
+        logo_found = True
+        break
+
+if not logo_found:
+    logo_element = '''
+    <div class="logo-fallback">
+        <div class="brand-icon">🧠</div>
+        <div class="brand-text">AI</div>
+    </div>
+    '''
+
+# Header with logo and branding
+st.markdown(f'''
+<div class="header-banner">
+    <div class="logo-container">
+        {logo_element}
+    </div>
+    <div class="header-content">
+        <h1>Corval.ai Memory Assistant</h1>
+        <p>Your intelligent knowledge companion that never forgets</p>
+    </div>
 </div>
 ''', unsafe_allow_html=True)
+
+# ✅ Stats
+try:
+    count_result = supabase.table("project_memory").select("id", count="exact").execute()
+    memory_count = count_result.count if count_result.count else 0
+    
+    st.markdown(f'''
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-number">{memory_count}</div>
+            <div class="stat-label">Memories Stored</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{len(st.session_state.chat_history)}</div>
+            <div class="stat-label">Messages Today</div>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+except Exception:
+    pass
 
 # ✅ Chat Container
 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
 # Show welcome message if no chat history
 if not st.session_state.chat_history:
-    # Stats
-    try:
-        count_result = supabase.table("project_memory").select("id", count="exact").execute()
-        memory_count = count_result.count if count_result.count else 0
-        
-        st.markdown(f'''
-        <div class="stats-container">
-            <div class="stat-item">
-                <div class="stat-number">{memory_count}</div>
-                <div class="stat-label">Memories Stored</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">{len(st.session_state.chat_history)}</div>
-                <div class="stat-label">Messages Today</div>
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
-    except Exception:
-        pass
-    
     st.markdown('''
     <div class="welcome-container">
         <div class="welcome-title">Welcome to your Memory Assistant</div>
-        <div class="welcome-subtitle">Your intelligent knowledge companion that never forgets</div>
+        <div class="welcome-subtitle">Start a conversation below</div>
         
         <div class="tip-card">
             <div class="tip-title">💾 Save Information</div>
@@ -422,31 +504,25 @@ for msg in st.session_state.chat_history:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ✅ Fixed Bottom Input
-st.markdown('''
-<div class="input-container">
-    <div class="input-wrapper">
-''', unsafe_allow_html=True)
+st.markdown('<div class="input-container"><div class="input-wrapper">', unsafe_allow_html=True)
 
 # Input form
 with st.form(key="chat_form", clear_on_submit=True):
-    col1, col2 = st.columns([5, 1])
+    col1, col2 = st.columns([6, 1])
     
     with col1:
         user_input = st.text_area(
             "Message",
             key="user_input", 
             label_visibility="collapsed",
-            placeholder="Type 'add: your note' to save info, or ask me anything...",
-            height=44
+            placeholder="💡 Type 'add: your note' to save info, or ask me anything...",
+            height=48
         )
     
     with col2:
-        submit_btn = st.form_submit_button("Send")
+        submit_btn = st.form_submit_button("💜 Send")
 
-st.markdown('''
-    </div>
-</div>
-''', unsafe_allow_html=True)
+st.markdown('</div></div>', unsafe_allow_html=True)
 
 # ✅ Process Input
 if submit_btn and user_input and user_input.strip():
@@ -457,7 +533,7 @@ if submit_btn and user_input and user_input.strip():
         </div>'''
     )
     
-    with st.spinner('Thinking...'):
+    with st.spinner('🤔 Thinking...'):
         try:
             if user_input.lower().startswith("add:"):
                 # Store Note
@@ -559,7 +635,7 @@ No relevant memories were found. Please provide a helpful general response."""
                     response_text = chat_response.choices[0].message.content
                     
                     if context_items:
-                        response_text += f"\n\n*Found {len(context_items)} relevant memories*"
+                        response_text += f"\n\n💡 *Found {len(context_items)} relevant memories*"
                     
                     st.session_state.chat_history.append(
                         f'''<div class="message ai-message">
