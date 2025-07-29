@@ -275,30 +275,51 @@ st.markdown("""
             color: #666;
         }
         
-        /* Fixed bottom input container */
+        /* Fixed bottom input container - more aggressive positioning */
         .input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
-            border-top: 1px solid rgba(102, 126, 234, 0.2);
-            padding: 15px 20px;
-            z-index: 1000;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(15px) !important;
+            border-top: 1px solid rgba(102, 126, 234, 0.2) !important;
+            padding: 15px 20px !important;
+            z-index: 9999 !important;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1) !important;
         }
         
-        .input-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
+        /* Target the Streamlit form directly */
+        .input-container [data-testid="stForm"] {
+            max-width: 800px !important;
+            margin: 0 auto !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+        
+        .input-container .stForm {
+            max-width: 800px !important;
+            margin: 0 auto !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+        
+        /* Force the main content to have bottom padding */
+        .main .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 100px !important;
+            max-width: 100% !important;
+        }
+        
+        /* Ensure nothing overlaps our fixed input */
+        .stApp > div:last-child {
+            margin-bottom: 80px !important;
         }
         
         /* Input field styling */
-        .stTextArea > div > div > textarea {
+        .input-container .stTextArea > div > div > textarea {
             border: 2px solid rgba(102, 126, 234, 0.3) !important;
             border-radius: 20px !important;
             padding: 12px 18px !important;
@@ -312,7 +333,7 @@ st.markdown("""
             transition: all 0.3s ease !important;
         }
         
-        .stTextArea > div > div > textarea:focus {
+        .input-container .stTextArea > div > div > textarea:focus {
             border-color: #667eea !important;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
             background: rgba(255, 255, 255, 1) !important;
@@ -503,8 +524,10 @@ for msg in st.session_state.chat_history:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ✅ Fixed Bottom Input
-st.markdown('<div class="input-container"><div class="input-wrapper">', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)  # Close chat container
+
+# ✅ Fixed Bottom Input - Simple approach
+st.markdown('<div class="input-container">', unsafe_allow_html=True)
 
 # Input form
 with st.form(key="chat_form", clear_on_submit=True):
@@ -522,7 +545,7 @@ with st.form(key="chat_form", clear_on_submit=True):
     with col2:
         submit_btn = st.form_submit_button("💜 Send")
 
-st.markdown('</div></div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ✅ Process Input
 if submit_btn and user_input and user_input.strip():
