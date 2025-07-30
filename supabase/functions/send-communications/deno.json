@@ -1,0 +1,6 @@
+{
+  "name": "send-communications",
+  "runtime": "edge",
+  "entrypoint": "index.ts",
+  "schedule": "*/5 * * * *"
+}

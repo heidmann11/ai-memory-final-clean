@@ -15,6 +15,7 @@ export default function Header() {
   };
 
   const navItems = [
+    { name: 'Capacity', href: '/capacity-scorecard' }, // NEW: Your competitive advantage page
     { name: 'Jobs', href: '/jobs' },
     { name: 'Routes', href: '/route-optimizer' },
     { name: 'Financial', href: '/financial' },

@@ -287,6 +287,9 @@ st.markdown("""
             padding: 15px 20px !important;
             z-index: 9999 !important;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.1) !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 80px !important;
         }
         
         /* Target the Streamlit form directly */
@@ -296,6 +299,7 @@ st.markdown("""
             background: transparent !important;
             border: none !important;
             padding: 0 !important;
+            width: 100% !important;
         }
         
         .input-container .stForm {
@@ -304,6 +308,23 @@ st.markdown("""
             background: transparent !important;
             border: none !important;
             padding: 0 !important;
+            width: 100% !important;
+        }
+        
+        /* Make sure the fixed container is always visible */
+        #fixed-input-container {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(15px) !important;
+            border-top: 1px solid rgba(102, 126, 234, 0.2) !important;
+            padding: 15px 20px !important;
+            z-index: 99999 !important;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1) !important;
+            width: 100% !important;
+            display: block !important;
         }
         
         /* Force the main content to have bottom padding */
@@ -526,10 +547,71 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)  # Close chat container
 
-# ✅ Fixed Bottom Input - Simple approach
-st.markdown('<div class="input-container">', unsafe_allow_html=True)
+# Clear chat button (only show if there's chat history) - moved before input
+if st.session_state.chat_history:
+    st.markdown('<div style="text-align: center; margin: 20px 0;">', unsafe_allow_html=True)
+    if st.button("🗑️ Clear Chat", key="clear_chat"):
+        st.session_state.chat_history = []
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Input form
+# Add spacer to push content up and ensure input is visible
+st.markdown('<div style="height: 120px;"></div>', unsafe_allow_html=True)
+
+# Clear chat button (only show if there's chat history)
+if st.session_state.chat_history:
+    if st.button("🗑️ Clear Chat", key="clear_chat"):
+        st.session_state.chat_history = []
+        st.rerun()
+
+# ✅ TRULY FIXED BOTTOM INPUT - Moved to very end
+st.markdown("""
+<div id="fixed-input-container" class="input-container">
+    <!-- Input form will be moved here by JavaScript -->
+</div>
+
+<script>
+// Wait for page to load then move the input to the bottom
+setTimeout(function() {
+    // Find the form (it will be at the bottom of the page)
+    const forms = document.querySelectorAll('[data-testid="stForm"]');
+    const lastForm = forms[forms.length - 1]; // Get the last form (our input form)
+    const container = document.getElementById('fixed-input-container');
+    
+    if (lastForm && container) {
+        // Move the form to our fixed container
+        container.appendChild(lastForm);
+        
+        // Make sure it's styled correctly
+        lastForm.style.maxWidth = '800px';
+        lastForm.style.margin = '0 auto';
+        lastForm.style.background = 'transparent';
+        lastForm.style.border = 'none';
+        lastForm.style.padding = '0';
+    }
+}, 500); // Wait 500ms for Streamlit to render
+
+// Also try moving it when the page is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const forms = document.querySelectorAll('[data-testid="stForm"]');
+        const lastForm = forms[forms.length - 1];
+        const container = document.getElementById('fixed-input-container');
+        
+        if (lastForm && container && !container.contains(lastForm)) {
+            container.appendChild(lastForm);
+            lastForm.style.maxWidth = '800px';
+            lastForm.style.margin = '0 auto';
+            lastForm.style.background = 'transparent';
+            lastForm.style.border = 'none';
+            lastForm.style.padding = '0';
+        }
+    }, 100);
+});
+</script>
+""", unsafe_allow_html=True)
+
+# Input form - placed at the very end so JavaScript can move it
 with st.form(key="chat_form", clear_on_submit=True):
     col1, col2 = st.columns([6, 1])
     
@@ -544,10 +626,6 @@ with st.form(key="chat_form", clear_on_submit=True):
     
     with col2:
         submit_btn = st.form_submit_button("💜 Send")
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ✅ Process Input
 if submit_btn and user_input and user_input.strip():
     # Add user message
     st.session_state.chat_history.append(
@@ -681,9 +759,3 @@ No relevant memories were found. Please provide a helpful general response."""
             )
     
     st.rerun()
-
-# Clear chat button (only show if there's chat history)
-if st.session_state.chat_history:
-    if st.button("🗑️ Clear Chat", key="clear_chat"):
-        st.session_state.chat_history = []
-        st.rerun()
