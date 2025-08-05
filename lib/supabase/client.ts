@@ -1,22 +1,20 @@
+// lib/supabase/client.ts
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
-}
+console.log('⛽ Supabase URL:', supabaseUrl)
+console.log('⛽ Supabase ANON KEY:', supabaseAnonKey?.slice(0, 5) + '…') 
 
-if (!supabaseAnonKey) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
-}
+if (!supabaseUrl) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL')
+if (!supabaseAnonKey) throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY')
 
-// Create and export the client directly
-export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey)
+const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey)
 
-// Alternative export function (for backward compatibility)
 export function createClient() {
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey)
+  return supabase
 }
 
+export { supabase }
 export default supabase

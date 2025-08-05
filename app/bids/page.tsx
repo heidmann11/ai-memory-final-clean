@@ -1,19 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function BidsPage() {
   const [bids, setBids] = useState([]);
+  const [stats, setStats] = useState({
+    totalBids: 0,
+    pending: 0,
+    won: 0,
+    lost: 0,
+    totalValue: 0,
+    avgScore: 0
+  });
   const [communications, setCommunications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBid, setSelectedBid] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchBidsAndCommunications();
@@ -22,37 +24,36 @@ export default function BidsPage() {
   const fetchBidsAndCommunications = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Fetch real bids from Supabase
-      const { data: bidsData, error: bidsError } = await supabase
-        .from('bids')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (bidsError) {
-        console.error('Error fetching bids:', bidsError);
-        throw bidsError;
+      // Fetch bids from our API
+      const bidsResponse = await fetch('/api/bids');
+      const bidsResult = await bidsResponse.json();
+      
+      if (!bidsResult.success) {
+        throw new Error(bidsResult.error || 'Failed to fetch bids');
       }
 
-      // Fetch real communications from Supabase
-      const { data: commsData, error: commsError } = await supabase
-        .from('communications')
-        .select('*')
-        .order('scheduled_at', { ascending: true });
-
-      if (commsError) {
-        console.error('Error fetching communications:', commsError);
-        throw commsError;
+      // Fetch communications (keeping direct Supabase call for now)
+      // You can create an API route for this too if needed
+      const commsResponse = await fetch('/api/communications');
+      let commsData = [];
+      
+      if (commsResponse.ok) {
+        const commsResult = await commsResponse.json();
+        commsData = commsResult.success ? commsResult.data : [];
       }
 
-      console.log('Fetched bids:', bidsData);
+      console.log('Fetched bids:', bidsResult.data.bids);
       console.log('Fetched communications:', commsData);
 
-      setBids(bidsData || []);
+      setBids(bidsResult.data.bids || []);
+      setStats(bidsResult.data.stats || stats);
       setCommunications(commsData || []);
+      
     } catch (error) {
       console.error('Error fetching data:', error);
-      // Show user-friendly error message
+      setError(error.message);
       setBids([]);
       setCommunications([]);
     } finally {
@@ -267,15 +268,6 @@ export default function BidsPage() {
     );
   };
 
-  const stats = {
-    total: bids.length,
-    pending: bids.filter(b => b.status === 'pending').length,
-    won: bids.filter(b => b.status === 'won').length,
-    lost: bids.filter(b => b.status === 'lost').length,
-    totalValue: bids.reduce((sum, bid) => sum + bid.amount, 0),
-    avgScore: bids.length > 0 ? Math.round(bids.reduce((sum, bid) => sum + bid.score, 0) / bids.length) : 0
-  };
-
   if (loading) {
     return (
       <div style={{
@@ -296,6 +288,45 @@ export default function BidsPage() {
             margin: '0 auto'
           }}></div>
           <p style={{ marginTop: '1rem', color: '#6b7280' }}>Loading bids...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        minHeight: 'calc(100vh - 4rem)',
+        backgroundColor: '#f9fafb',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ 
+          textAlign: 'center',
+          backgroundColor: '#fee2e2',
+          border: '1px solid #fecaca',
+          borderRadius: '0.5rem',
+          padding: '2rem',
+          maxWidth: '400px'
+        }}>
+          <h2 style={{ color: '#991b1b', marginBottom: '1rem', margin: '0 0 1rem 0' }}>
+            Error Loading Bids
+          </h2>
+          <p style={{ color: '#7f1d1d', margin: '0 0 1rem 0' }}>{error}</p>
+          <button 
+            onClick={fetchBidsAndCommunications}
+            style={{
+              backgroundColor: '#dc2626',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.25rem',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -331,7 +362,7 @@ export default function BidsPage() {
         marginBottom: '2rem'
       }}>
         {[
-          { label: 'Total Bids', value: stats.total, color: '#111827' },
+          { label: 'Total Bids', value: stats.totalBids, color: '#111827' },
           { label: 'Pending', value: stats.pending, color: '#d97706' },
           { label: 'Won', value: stats.won, color: '#059669' },
           { label: 'Lost', value: stats.lost, color: '#dc2626' },
